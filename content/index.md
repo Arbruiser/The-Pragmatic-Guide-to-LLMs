@@ -13,21 +13,21 @@ You are likely already familiar with proprietary language models like OpenAI's G
 
 When you hear names like **Llama 3** (by Meta), **Mistral**, or **Qwen**, these are all highly capable open-weight% alternatives. Because their underlying weights are publicly available, you are not restricted by API limits, vendor lock-in, or data privacy concerns—you can fine-tune and test them securely and privately on LUMI's hardware.
 
-### Understanding Parameters
+**Understanding Parameters.**
 When you host your own models, you must understand their hardware requirements. The "Large" in LLM refers to the number of **parameters**% — the numerical values (weights) the model learned during training. Think of parameters as the model's "memory" of patterns in language. A 70-billion-parameter model has learned 70 billion individual numbers that, together, allow it to generate coherent outputs.
 
 **Why does size matter?** Generally, more parameters mean more capability — the model can handle more nuanced tasks and retain more knowledge. But more parameters also mean more memory and more compute power to run. This is exactly why you need a supercomputer like LUMI.
 
 **Is size everything?** While parameter count is a useful metric, it is not the only factor that determines a model's quality. AI research moves incredibly fast, and very recent models often vastly outperform older models of the exact same size due to better training data and improved architectures.
 
-### The Benchmark Problem
+**The Benchmark Problem.**
 Defining "model quality" is notoriously complex. There is a myriad of different benchmarks (like SWE Bench, Humanity's Last Exam, or MMMLU) that test everything from agentic coding to multilingual reasoning to data analysis. However, no single benchmark tells the whole story, and many are flawed:
 
 - **Data Contamination:** Because LLMs are trained on internet data, the answers to benchmark tests are often accidentally included in their training data. This means the model may have "memorized" the test rather than learning to reason.
 - **Over-optimization:** When a specific benchmark becomes popular, researchers optimize their models specifically to score well on it, even if the model's real-world quality suffers.
 - **Subjective "Vibes":** A model might score perfectly on a standardized test but feel stiff, overly formal, or unhelpful in actual interactions. Ultimately, the only true test of model quality is running it against your specific domain use-case.
 
-### Base vs. Instruct Models
+**Base vs. Instruct Models.**
 When browsing repositories like Hugging Face, you will often see two versions of the same model: a **Base**% model and an **Instruct**% (or Chat) model. Both models ultimately have the exact same goal: to predict the most likely next token. The difference lies entirely in the data they were trained on to learn that prediction:
 
 *   **Base Models:** These models undergo an initial, massive pre-training phase where they "read" vast amounts of raw text from the internet. Because their training data is just internet text, their only behavior is to continue a pattern. If you prompt a Base model with *"The capital of France is"*, it will correctly answer *"Paris"*. But if you prompt it with *"What is the capital of France?"*, it might just continue the pattern of questions and output *"What is the capital of Germany? What is the capital of Ukraine?"*. Base models are raw pattern-matchers, typically used as a starting point for your own fine-tuning.
@@ -37,13 +37,13 @@ When browsing repositories like Hugging Face, you will often see two versions of
 ## 🏗️ Model Architectures: Dense vs. Mixture of Experts (MoE)
 Not all LLMs are built the same way. The two main architectural approaches determine how the model uses its parameters:
 
-### Dense Models
+**Dense Models.**
 In a **dense**% model (such as Meta's Llama), every single parameter is active for processing each individual token (word piece).
 
 *   **Slightly higher quality:** Because all parameters participate in the math of every single token, dense models are best when you need that little extra performance gain and want to squeeze the absolute maximum reasoning quality out of the model's size (and the VRAM it consumes).
 *   **Computationally expensive:** Every single token generated requires the math of all parameters (e.g., all 35B parameters in a 35B dense model), making it slower to run and severely limiting how many simultaneous requests it can process.
 
-### Mixture of Experts (MoE)
+**Mixture of Experts (MoE).**
 In a **Mixture of Experts**% (MoE) model (such as Qwen3.6-35B-A3B or Mixtral-8x7B), the network contains many specialized sub-networks called "experts." Instead of activating all parameters, a built-in "router" dynamically selects only a few experts to process each individual token.
 
 *   **Specialized routing:** MoE models achieve almost the exact same quality as dense models of equivalent size because they route dynamically. For example, if the next token is about math, the router sends it to the math experts; it doesn't waste compute activating "poetry experts."
@@ -64,14 +64,14 @@ For example, in the sentence *"The cat sat on the mat because it was tired"*, th
 
 To process these complex relationships, the model splits its attention into multiple independent "viewpoints" called **Attention Heads**. One head might focus on grammar, another on the subject of the sentence, and another on the emotional tone. 
 
-### The KV Cache: Query, Key, and Value
+**The KV Cache: Query, Key, and Value.**
 During text generation, the model stores the context of all previously generated tokens in what's called the **KV Cache**% (Key-Value Cache). Think of the KV cache as the model's short-term working memory. It stores two things for each token:
 * **Keys:** The token's identity (*What am I?*).
 * **Values:** The token's actual content or meaning (*What do I contain?*).
 
 When the model needs to generate a new token (acting as the **Query**, or *"What am I looking for?"*), it checks its Query against the Keys in the cache to extract the right Values. 
 
-### Types of Attention Architectures
+**Types of Attention Architectures.**
 Over the years, researchers have developed different versions of attention to optimize how these Heads and the KV Cache work together, balancing reasoning quality against GPU memory efficiency:
 
 | Type | How It Works | Memory Use | Used By |
@@ -86,19 +86,19 @@ Over the years, researchers have developed different versions of attention to op
 ## ⚡ Inference: Running a Trained Model
 **What is inference?** It is the process of using an already-trained model to generate outputs — answering questions, writing code, summarizing documents. This is what happens when you load a pre-trained model and ask it to generate text.
 
-### Data Movement on the GPU
+**Data Movement on the GPU.**
 To understand inference performance, it is important to distinguish between two different types of data movement:
 
 *   **Initialisation (Disk → VRAM):** Model weights move from the parallel file system into the GPU memory. This happens once at startup and takes several minutes. The weights must fit entirely in VRAM (assuming no offloading), and they stay there as long as the model is running.
 *   **Inference (VRAM → GPU Cores):** During text generation (the Decode phase), the GPU must reload the model weights from VRAM into the compute cores for *every single token* generated.
 
-### How "Memory" (Context) Works
+**How "Memory" (Context) Works.**
 When interacting with an LLM, it is a common misconception that the model "remembers" the conversation naturally. In reality, LLMs are **stateless**: they treat every single request as a brand new interaction. To have a continuous conversation, the client (your application or script) must send the *entire conversation history* back to the model every single time.
 
 *   **The cost of context:** As the conversation grows longer, the input prompt becomes larger. This means the "Prefill" stage takes longer and consumes more VRAM (to store the KV Cache). While engines like vLLM make this memory usage much more efficient, it doesn't make it free.
 *   **Client-side management:** The context memory must be managed by your script or application. If you restart your script, the conversation "memory" is cleared, even if the vLLM server is still running in the background.
 
-### Controlling the Output: Generation Parameters
+**Controlling the Output: Generation Parameters.**
 When running inference, you can adjust several parameters to control how the model selects the next token, balancing between predictability and creativity. Model developers usually state the optimal parameter ranges for their specific models on their Hugging Face pages. Straying too far from these optimal values (especially Temperature) can lead to unusual and unwanted behavior, such as the model getting stuck in an infinite loop of repetition.
 
 *   **Temperature**%: Controls the randomness of the model's predictions. A low temperature (e.g., `0` or `0.2`) makes the model more deterministic (but not fully), almost always picking the most likely next word—ideal for coding, mathematics, or extracting facts. A high temperature (e.g., `0.8` or `1.0`) flattens the probabilities, allowing the model to choose less likely words, which is better for creative writing or brainstorming.
@@ -109,24 +109,24 @@ When running inference, you can adjust several parameters to control how the mod
 
 Most inference engines like vLLM allow you to set these parameters per-request, meaning you can serve both creative and deterministic applications from the exact same running model.
 
-### Understanding Throughput
+**Understanding Throughput.**
 **Throughput** is the rate at which the model can process and generate tokens. Performance is split into two distinct stages, each bound by different hardware limits:
 
 *   **Prefill (Compute bound):** The model processes the entire input prompt (and history) in parallel. Since the GPU handles all input tokens at once, the bottleneck is the hardware's raw mathematical throughput (FLOPs). Prefill throughput is how many **input** tokens the model can be **processing**.
 *   **Decode (Memory bandwidth bound):** Tokens are generated one by one. For every single token produced, the GPU must reload all the model's weights from VRAM to the GPU's compute cores. This makes performance dependent on Memory Bandwidth (how fast data can move) rather than how fast the GPU can calculate. Decode throughput is how many **output** tokens the model can be **generating**.
 
 
-### The vLLM Inference Engine
+**The vLLM Inference Engine.**
 We typically use a library called **vLLM**% to run models. It is the recommended inference engine on LUMI because it natively supports AMD GPUs and includes powerful memory and throughput optimizations (such as *PagedAttention* and *Continuous Batching*) that massively increase how many requests the hardware can handle simultaneously.
 
-### Scaling Across GPUs: Parallelism Strategies
+**Scaling Across GPUs: Parallelism Strategies.**
 When a model is too large for a single GPU, or when you need to process massive amounts of data simultaneously, you can distribute the workload across multiple GPUs (or GCDs in case of LUMI where 1 GPU consists of 2 GCDs). The three main strategies are:
 
 *   **Tensor Parallelism**% (TP): Splits the *individual mathematical operations* of the model across multiple GPUs. Think of this like multiple mechanics working on the exact same car engine simultaneously. All GPUs are active at the exact same time, calculating different pieces of the same token. This requires ultra-fast, constant communication between the GPUs. In vLLM, you control this by setting a parameter like `tensor_parallel_size=2`.
 *   **Pipeline Parallelism**% (PP): Splits the model *sequentially by its layers*. Think of this like a factory assembly line. For example, GPU 1 holds layers 1–40, and GPU 2 holds layers 41–80. GPU 1 processes a token through its layers and passes the intermediate result to GPU 2 to finish the job. Unlike TP, they are not working on the exact same step simultaneously. This requires much less communication between GPUs but can leave some GPUs idle waiting for their turn ("pipeline bubbles").
 *   **Data Parallelism**% (DP): Loads a *full, independent replica* of the entire model onto multiple GPUs. There is no splitting of the model here. GPU 1 and GPU 2 each process completely different batches of user prompts at the same time. While this doesn't help if a single model is too large to fit in one GPU's VRAM, it drastically increases how many requests your server can handle per second.
 
-### Inference Workflows on LUMI
+**Inference Workflows on LUMI.**
 There are two main architectural patterns for running inference on a supercomputer:
 
 *   **Offline (Batch) Mode:** The model loads into VRAM, processes a massive dataset of prompts all at once at maximum speed, and shuts down immediately. This is a common pattern for supercomputer jobs, and it is highly efficient for cluster billing.
@@ -143,14 +143,14 @@ Pre-trained models are impressive generalists, but what if you need a model that
 
 Fine-tuning takes a pre-trained model and trains it further on your specific data. The model retains its general language abilities while learning the patterns, terminology, and style of your domain.
 
-### Full-Parameter Fine-Tuning
+**Full-Parameter Fine-Tuning.**
 This is the "brute force" approach: you update **every single weight** in the model during training.
 
 *   **When to use:** When you have a large, high-quality dataset and need maximum performance. This approach can fundamentally alter the model's behavior.
 *   **The risk (Catastrophic Forgetting):** Because you are altering the entire model, there is a risk that the model will "forget" its pre-trained general knowledge. For example, if you heavily train a general model exclusively on legal contracts, it might lose its ability to write code or converse in multiple languages.
 *   **The cost:** The memory requirement is roughly **3–4× the model size** because you need to store the model weights, the gradients (how much each weight should change), and the optimizer states (the training algorithm's internal bookkeeping). Fine-tuning a 70B model this way requires enormous GPU resources (available on LUMI).
 
-### PEFT: Parameter-Efficient Fine-Tuning
+**PEFT: Parameter-Efficient Fine-Tuning.**
 What if you could get 90% of the benefit at 10% of the cost? **PEFT** methods freeze most of the model's original weights and only train a small number of additional parameters.
 
 The most popular PEFT technique is **LoRA**% (Low-Rank Adaptation). It works by adding small, trainable matrices alongside the model's frozen layers. During training, only these small matrices are updated — the original model remains untouched.
@@ -160,7 +160,7 @@ The most popular PEFT technique is **LoRA**% (Low-Rank Adaptation). It works by 
 *   **The savings:** Memory requirements drop dramatically — roughly **1.1–1.2× the model size** instead of 3–4×. This means you can fine-tune a 70B model on far fewer GCDs than full-parameter training would require.
 *   **The trade-off:** The maximum quality ceiling is slightly lower than full fine-tuning, but for many real-world applications, the difference is negligible.
 
-### Quantization: Doing More with Less
+**Quantization: Doing More with Less.**
 Another popular technique to reduce resource requirements is **quantization**%, which shrinks the model by reducing the mathematical precision of its weights. You can think of it like rounding a highly precise decimal (such as `3.14159`) down to a shorter version (`3.14`). While you lose a tiny bit of detail, the resulting number takes up significantly less memory. 
 
 In LLMs, model weights are typically stored as high-precision 16-bit numbers. Quantization mathematically compresses these into smaller formats, like 8-bit or 4-bit. While this compression degrades the model's reasoning quality, it drastically shrinks the VRAM footprint—enabling you to run massive models on fewer GCDs. Quantization can even be combined with LoRA (called QLoRA) for memory-efficient fine-tuning on a single node.
@@ -170,7 +170,7 @@ While quantization saves VRAM, it is critical to understand the hardware you are
 
 If you use floating-point quantized models (whether 8-bit or 4-bit), LUMI GPUs must constantly de-quantize those numbers back to 16-bit "on the fly" in order to perform the actual calculations. Because of this massive overhead, the model will generate text **much, much slower** than a standard 16-bit model. For most workloads on LUMI, the severe speed penalty of floating-point quantization makes it simply not worth the VRAM savings.
 
-### RAG: Retrieval-Augmented Generation
+**RAG: Retrieval-Augmented Generation.**
 If you want your model to answer questions based on your private data, fine-tuning is not always the best approach. Fine-tuning teaches the model *how* to speak or behave, but it is notoriously bad at acting as a factual database. If a document changes, you would have to completely retrain the model to update its knowledge.
 
 **Retrieval-Augmented Generation**% (RAG) is an alternative architecture. Instead of baking the knowledge into the model's weights, you store your documents in a separate database. When a user asks a question, a search engine retrieves the most relevant documents and pastes them directly into the LLM's prompt. 
@@ -191,7 +191,7 @@ If you want your model to answer questions based on your private data, fine-tuni
 
 Now for the practical part: how do you figure out how many GCDs to request for your specific model?
 
-### Inference Memory (Rule of Thumb)
+**Inference Memory (Rule of Thumb).**
 In the standard BF16 (16-bit) precision, each parameter takes **2 bytes** of memory:
 
 | Model Size | Memory Required (BF16) | Recommended GCDs (64 GB each) |
