@@ -177,7 +177,7 @@ If you want your model to answer questions based on your private data, fine-tuni
 **Retrieval-Augmented Generation%** (RAG) is an alternative architecture. Instead of baking the knowledge into the model's weights, you store your documents in a separate database. When a user asks a question, a search engine retrieves the most relevant documents and pastes them directly into the LLM's prompt. 
 
 <figure>
-  <img src="./assets/RAG_workflow.png" alt="RAG workflow diagram" />
+  <img src="./assets/RAG_workflow.jpg" alt="RAG workflow diagram" />
   <figcaption><em>Figure: A typical Retrieval-Augmented Generation (RAG) workflow.</em></figcaption>
 </figure>
 
@@ -221,7 +221,7 @@ Q: Which of the following best describes the difference between a Base model and
 
 Q: Why can standard LLM benchmarks sometimes be misleading when evaluating a model's true quality? (select all)
 - [ ] They are often written in programming languages the model doesn't understand.
-- [x] The benchmark answers might have been accidentally included in the model's training data (Data Contamination).
+- [x] The benchmark answers may have been included in the model's training data (Data Contamination).
 - [ ] Benchmarks can only test models with fewer than 100 billion parameters.
 - [x] Researchers might over-optimize the model specifically to score high on those tests.
 > Benchmarks are useful but flawed due to contamination and over-optimization. The best test is always evaluating the model against your specific domain use-case.
