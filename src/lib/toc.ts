@@ -32,12 +32,14 @@ export function extractToc(body: string): TocItem[] {
     const m = line.match(/^(#{2,3})\s+(.+?)\s*#*\s*$/);
     if (!m) continue;
     const depth = m[1].length as 2 | 3;
-    // Strip simple inline markdown so the TOC text reads cleanly.
+    // Strip simple inline markdown and glossary markers so the TOC text reads cleanly.
     const text = m[2]
       .replace(/`([^`]+)`/g, "$1")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/(?<![\s\d\\])%/g, "") // Remove glossary % markers
+      .replace(/\\%/g, "%");          // Unescape literal \%
     out.push({ depth, text, id: slugger.slug(text) });
   }
 
