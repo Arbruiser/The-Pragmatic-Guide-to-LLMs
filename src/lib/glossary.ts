@@ -133,16 +133,16 @@ function processSegment(
     // there are never false positives on ordinary prose.
     if (pct !== "%") return full;
     const key = termText.replace(/\s+/g, " ").trim().toLowerCase();
-    
+
     let entry = glossary.get(key);
     let canonicalKey = key;
-    
+
     // Fallback: If not found and ends with 's', try the singular form
     if (!entry && key.endsWith("s")) {
       canonicalKey = key.slice(0, -1);
       entry = glossary.get(canonicalKey);
     }
-    
+
     if (!entry) return full;
     linked.add(canonicalKey);
     return spanFor(entry, termText);
@@ -158,8 +158,47 @@ function processLine(
   // Leave inline code spans and markdown links untouched.
   const parts = line.split(/(`[^`]*`|\[[^\]]*\]\([^)]*\))/g);
   for (let i = 0; i < parts.length; i++) {
-    if (i % 2 === 1) continue; // odd parts are protected (code / links)
+    if (i % 2 === 1) {
+      // odd parts are protected (code / links)
+      
+      // Feature: `term%`
+      if (parts[i].startsWith("`") && parts[i].endsWith("%`")) {
+        const codeContent = parts[i].slice(1, -2).trim();
+        const key = codeContent.toLowerCase();
+        let entry = glossary.get(key);
+        let canonicalKey = key;
+        if (!entry && key.endsWith("s")) {
+          canonicalKey = key.slice(0, -1);
+          entry = glossary.get(canonicalKey);
+        }
+        if (entry) {
+          linked.add(canonicalKey);
+          const cleanCode = `\`${codeContent}\``;
+          parts[i] = spanFor(entry, cleanCode);
+        }
+      }
+      continue;
+    }
+
+    if (parts[i].startsWith("%") && i > 0 && parts[i - 1].startsWith("`") && parts[i - 1].endsWith("`")) {
+      const codeContent = parts[i - 1].slice(1, -1).trim();
+      const key = codeContent.toLowerCase();
+      let entry = glossary.get(key);
+      let canonicalKey = key;
+      if (!entry && key.endsWith("s")) {
+        canonicalKey = key.slice(0, -1);
+        entry = glossary.get(canonicalKey);
+      }
+      if (entry) {
+        linked.add(canonicalKey);
+        parts[i - 1] = spanFor(entry, parts[i - 1]);
+        parts[i] = parts[i].substring(1);
+      }
+    }
+
     parts[i] = processSegment(parts[i], glossary, pattern, linked);
+    // Unescape \% to %
+    parts[i] = parts[i].replace(/\\%/g, "%");
   }
   return parts.join("");
 }
@@ -188,8 +227,7 @@ export function applyGlossaryMarkers(source: string): string {
       continue;
     }
     if (inFence) continue;
-    // Don't link inside headings or markdown table rows.
-    if (/^\s*#{1,6}\s/.test(lines[i]) || /^\s*\|/.test(lines[i])) continue;
+
     lines[i] = processLine(lines[i], glossary, pattern, linked);
   }
   return lines.join("\n");
