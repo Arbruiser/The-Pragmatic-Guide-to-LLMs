@@ -5,24 +5,15 @@ nav_order: 99
 
 # Glossary
 
-This page is just a normal `.md` file in the `content/` folder, but it **must be named exactly `glossary.md`** (all lowercase). It needs the same front matter as any other page (`title` and `nav_order`). The first two-column markdown table below is automatically turned into the glossary — every term in the **Term** column can then be referenced from any page by putting a single **percent sign** directly after the word. The reader sees a dashed underline and gets the definition in a small pop-up when they hover over it (or focus it with the keyboard).
-
-> [!tip] How to reference a term
-> In any `.md` file, type the term and add a percent sign right after it, with no
-> space in between: `Supercomputer%`. Matching is **case-insensitive**, so
-> `supercomputer%` works too. Multi-word terms work as well — just put the
-> percent sign after the last word: `Front Matter%`.
-
-To add a term, just add a row to the table below. Keep the two columns **Term**
-and **Definition**. Only words that appear in this table become links; every
-other percent sign in your text is left untouched.
-
-## Template terms
 
 | Term | Definition |
 |:-----|:-----------|
-| **open-weight** | Models whose underlying weights are publicly available, allowing users to run, modify, and fine-tune them privately. |
+| **token** | A frequently occurring chunk of text that models read and generate; roughly ¾ of an English word on average. Tokens are the unit for throughput, context limits, and memory usage. |
 | **parameter** | The numerical values (weights) a model learned during training, acting as its "memory" of patterns. |
+| **context window** | The maximum number of tokens a model can consider in a single request, including the prompt, conversation history, and generated output. |
+| **inference** | Using an already-trained model to generate outputs (answering questions, writing code), as opposed to training it. |
+| **throughput** | The rate at which a model processes or generates tokens, usually measured in tokens per second. |
+| **open-weight** | Models whose underlying weights are publicly available, allowing users to run, modify, and fine-tune them privately. |
 | **Base** | A raw model trained solely to predict the next word, without any instruction-following capabilities. |
 | **Instruct** | A model that has been further trained (aligned) to follow instructions, answer questions, and act as a conversational assistant. |
 | **Alignment** | The process of training a Base model to behave safely and follow instructions, often using techniques like DPO. |
@@ -45,4 +36,3 @@ other percent sign in your text is left untouched.
 | **LoRA** | Low-Rank Adaptation; a Parameter-Efficient Fine-Tuning (PEFT) technique that trains small matrices alongside frozen model layers. |
 | **quantisation** | A technique to shrink a model by reducing the mathematical precision of its weights (e.g., from 16-bit to 8-bit). |
 | **Retrieval-Augmented Generation** | An architecture where a search engine retrieves relevant documents and pastes them into the LLM's prompt. |
-
