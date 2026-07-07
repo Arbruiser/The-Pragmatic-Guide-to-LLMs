@@ -11,7 +11,7 @@ import rehypeRaw from "rehype-raw";
 
 const linkIconSvg = fromHtmlIsomorphic(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
-  { fragment: true }
+  { fragment: true },
 ).children;
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
@@ -20,16 +20,8 @@ import { Callout } from "./Callout";
 import { CodeBlock } from "./CodeBlock";
 import { Quiz } from "./Quiz";
 import { parseQuiz } from "@/lib/quiz";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { applyGlossaryMarkers, lookupTerm } from "@/lib/glossary";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
@@ -37,17 +29,24 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
  *  hast→React boundary and is reachable via JSX props. */
 function rehypeHoistCodeMeta() {
   return (tree: unknown) => {
-    visit(tree as never, "element", (node: { tagName?: string; properties?: Record<string, unknown>; children?: Array<{ tagName?: string; data?: { meta?: string } }> }) => {
-      if (
-        node.tagName === "pre" &&
-        node.children?.[0]?.tagName === "code" &&
-        node.children[0].data?.meta
-      ) {
-        node.properties = node.properties ?? {};
-        (node.properties as Record<string, unknown>).dataMeta =
-          node.children[0].data.meta;
-      }
-    });
+    visit(
+      tree as never,
+      "element",
+      (node: {
+        tagName?: string;
+        properties?: Record<string, unknown>;
+        children?: Array<{ tagName?: string; data?: { meta?: string } }>;
+      }) => {
+        if (
+          node.tagName === "pre" &&
+          node.children?.[0]?.tagName === "code" &&
+          node.children[0].data?.meta
+        ) {
+          node.properties = node.properties ?? {};
+          (node.properties as Record<string, unknown>).dataMeta = node.children[0].data.meta;
+        }
+      },
+    );
   };
 }
 
@@ -56,11 +55,7 @@ function rehypeCopyHeadingButtons() {
     visit(
       tree as never,
       "element",
-      (node: {
-        tagName?: string;
-        properties?: Record<string, unknown>;
-        children?: unknown[];
-      }) => {
+      (node: { tagName?: string; properties?: Record<string, unknown>; children?: unknown[] }) => {
         if (!/^h[1-4]$/.test(node.tagName ?? "")) return;
         const id = node.properties?.id;
         if (typeof id !== "string") return;
@@ -76,24 +71,17 @@ function rehypeCopyHeadingButtons() {
           },
           children: linkIconSvg,
         });
-      }
+      },
     );
   };
 }
 
 /** Inline glossary term with a hover/focus popover showing its definition.
  *  Falls back to plain text when the term isn't in the glossary. */
-function GlossaryTerm({
-  term,
-  children,
-}: {
-  term: string;
-  children: React.ReactNode;
-}) {
+function GlossaryTerm({ term, children }: { term: string; children: React.ReactNode }) {
   const entry = lookupTerm(term);
   if (!entry) {
     if (import.meta.env.DEV && term) {
-      // eslint-disable-next-line no-console
       console.warn(`[glossary] no definition found for "${term}"`);
     }
     return <>{children}</>;
@@ -112,9 +100,7 @@ function GlossaryTerm({
       </HoverCardTrigger>
       <HoverCardContent className="w-72 text-sm">
         <p className="font-semibold text-foreground">{entry.term}</p>
-        <p className="mt-1 leading-snug text-muted-foreground">
-          {entry.definition}
-        </p>
+        <p className="mt-1 leading-snug text-muted-foreground">{entry.definition}</p>
       </HoverCardContent>
     </HoverCard>
   );
@@ -140,12 +126,10 @@ const CALLOUT_RE = /^\[!(note|warning|info|tip|command)\][ \t]*([^\n]*)/i;
 type CalloutVariant = "note" | "warning" | "info" | "tip" | "command";
 
 function extractCallout(
-  children: React.ReactNode
-): { variant: CalloutVariant; title?: string; rest: React.ReactNode } | null {
+  children: React.ReactNode,
+): { variant: CalloutVariant; title?: React.ReactNode; rest: React.ReactNode } | null {
   const arr = React.Children.toArray(children);
-  const firstIdx = arr.findIndex(
-    (c) => !(typeof c === "string" && c.trim() === "")
-  );
+  const firstIdx = arr.findIndex((c) => !(typeof c === "string" && c.trim() === ""));
   if (firstIdx === -1) return null;
   const first = arr[firstIdx];
 
@@ -160,23 +144,44 @@ function extractCallout(
   if (!match) return null;
 
   const variant = match[1].toLowerCase() as CalloutVariant;
-  const title = match[2].trim() || undefined;
-
   const matchedLen = match[0].length;
-  const remainderHead = head.slice(matchedLen).replace(/^\n+/, "");
-  const restOfFirst: React.ReactNode[] = [
-    ...(remainderHead ? [remainderHead] : []),
-    ...inner.slice(1),
-  ];
-  const newFirst = React.cloneElement(
-    first as React.ReactElement<{ children?: React.ReactNode }>,
-    { children: restOfFirst }
-  );
-  const rest = [
-    ...arr.slice(0, firstIdx),
-    ...(restOfFirst.length > 0 ? [newFirst] : []),
-    ...arr.slice(firstIdx + 1),
-  ];
+
+  // `match[2]` is the title text captured from the marker line (up to the first
+  // newline). Inline elements (e.g. `code`) split the first paragraph into
+  // multiple React children, and a soft line break between the title line and
+  // the body shows up as a "\n" inside one of those text nodes. We walk the
+  // first paragraph's children and split at the first newline: everything
+  // before it is the title, everything after it is the start of the body.
+  const afterMarker: React.ReactNode[] = [head.slice(matchedLen), ...inner.slice(1)];
+  const titleRest: React.ReactNode[] = [];
+  const bodyFromFirstParagraph: React.ReactNode[] = [];
+  let didSplit = false;
+  for (const node of afterMarker) {
+    if (!didSplit && typeof node === "string") {
+      const nl = node.indexOf("\n");
+      if (nl !== -1) {
+        const before = node.slice(0, nl);
+        const after = node.slice(nl + 1);
+        if (before) titleRest.push(before);
+        if (after) bodyFromFirstParagraph.push(after);
+        didSplit = true;
+        continue;
+      }
+    }
+    (didSplit ? bodyFromFirstParagraph : titleRest).push(node);
+  }
+
+  const titleParts: React.ReactNode[] = [];
+  if (match[2]) titleParts.push(match[2]);
+  for (const node of titleRest) {
+    if (typeof node === "string" && node === "") continue;
+    titleParts.push(node);
+  }
+  const title: React.ReactNode | undefined = titleParts.length > 0 ? titleParts : undefined;
+
+  // Body = remainder of the first paragraph (after the title line) plus every
+  // following block (additional paragraphs, lists, code, etc.).
+  const rest: React.ReactNode[] = [...bodyFromFirstParagraph, ...arr.slice(firstIdx + 1)];
 
   return { variant, title, rest };
 }
@@ -222,14 +227,36 @@ function nodeToText(node: React.ReactNode): string {
   return "";
 }
 
-export function MarkdownRenderer({
-  source,
-  enableGlossary = true,
-}: MarkdownRendererProps) {
+/**
+ * Wraps the ends of inline code blocks to prevent tiny orphans (like a lonely `/`)
+ * when the block wraps across lines.
+ */
+function formatInlineCode(node: React.ReactNode): React.ReactNode {
+  const text = nodeToText(node);
+  const MIN_CHUNK = 6;
+
+  if (text.length <= MIN_CHUNK * 2) {
+    return <span className="whitespace-nowrap">{node}</span>;
+  }
+
+  const start = text.slice(0, MIN_CHUNK);
+  const middle = text.slice(MIN_CHUNK, -MIN_CHUNK);
+  const end = text.slice(-MIN_CHUNK);
+
+  return (
+    <>
+      <span className="whitespace-nowrap">{start}</span>
+      {middle}
+      <span className="whitespace-nowrap">{end}</span>
+    </>
+  );
+}
+
+export function MarkdownRenderer({ source, enableGlossary = true }: MarkdownRendererProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const processedSource = React.useMemo(
     () => (enableGlossary ? applyGlossaryMarkers(source) : source),
-    [source, enableGlossary]
+    [source, enableGlossary],
   );
   const [lightbox, setLightbox] = React.useState<{
     src: string;
@@ -270,9 +297,7 @@ export function MarkdownRenderer({
         components={{
           span(props) {
             const p = props as Record<string, unknown>;
-            const node = p.node as
-              | { properties?: Record<string, unknown> }
-              | undefined;
+            const node = p.node as { properties?: Record<string, unknown> } | undefined;
             const className = node?.properties?.className;
             const isGlossary = Array.isArray(className)
               ? className.includes("glossary-term")
@@ -318,11 +343,11 @@ export function MarkdownRenderer({
             const dataMeta =
               (p.dataMeta as string | undefined) ??
               (p["data-meta"] as string | undefined) ??
-              node?.children?.find((child) => child.tagName === "code")?.data
-                ?.meta;
-            const child = React.Children.only(
-              children
-            ) as React.ReactElement<{ className?: string; children?: React.ReactNode }>;
+              node?.children?.find((child) => child.tagName === "code")?.data?.meta;
+            const child = React.Children.only(children) as React.ReactElement<{
+              className?: string;
+              children?: React.ReactNode;
+            }>;
 
             const childClassName = child.props.className ?? "";
             if (/\blanguage-quiz\b/.test(childClassName)) {
@@ -345,8 +370,8 @@ export function MarkdownRenderer({
           code({ className, children }) {
             if (!className) {
               return (
-                <code className="rounded bg-inline-code-bg px-1.5 py-0.5 font-mono text-[0.9em] text-inline-code-fg">
-                  {children}
+                <code className="rounded bg-inline-code-bg px-1.5 py-0.5 font-mono text-[0.9em] text-inline-code-fg break-words">
+                  {formatInlineCode(children)}
                 </code>
               );
             }
@@ -358,10 +383,7 @@ export function MarkdownRenderer({
             // External, protocol-relative, mailto/tel, and pure-hash links stay
             // as plain anchors.
             const isExternal =
-              !href ||
-              /^[a-z]+:/i.test(href) ||
-              href.startsWith("//") ||
-              href.startsWith("#");
+              !href || /^[a-z]+:/i.test(href) || href.startsWith("//") || href.startsWith("#");
             if (isExternal) {
               const isHttp = href?.startsWith("http");
               return (
@@ -380,11 +402,7 @@ export function MarkdownRenderer({
             const [path, hash] = href.split("#");
             const to = path.startsWith("/") ? path : `/${path}`;
             return (
-              <Link
-                to={to as string}
-                hash={hash || undefined}
-                className={className}
-              >
+              <Link to={to as string} hash={hash || undefined} className={className}>
                 {children}
               </Link>
             );
@@ -417,12 +435,7 @@ export function MarkdownRenderer({
             const src = resolveAssetUrl(props.src);
             return (
               <div className="my-6 aspect-video w-full overflow-hidden rounded-lg border border-border">
-                <iframe
-                  {...props}
-                  src={src}
-                  className="h-full w-full"
-                  allowFullScreen
-                />
+                <iframe {...props} src={src} className="h-full w-full" allowFullScreen />
               </div>
             );
           },
@@ -431,13 +444,8 @@ export function MarkdownRenderer({
         {processedSource}
       </ReactMarkdown>
 
-      <Dialog
-        open={lightbox !== null}
-        onOpenChange={(open) => !open && setLightbox(null)}
-      >
-        <DialogContent
-          className="max-w-[95vw] border-0 bg-transparent p-0 shadow-none sm:max-w-[90vw]"
-        >
+      <Dialog open={lightbox !== null} onOpenChange={(open) => !open && setLightbox(null)}>
+        <DialogContent className="max-w-[95vw] border-0 bg-transparent p-0 shadow-none sm:max-w-[90vw]">
           <VisuallyHidden>
             <DialogTitle>{lightbox?.alt || "Image preview"}</DialogTitle>
           </VisuallyHidden>
@@ -446,10 +454,7 @@ export function MarkdownRenderer({
               className="flex min-h-[85vh] w-full items-center justify-center"
               onClick={() => setLightbox(null)}
             >
-              <figure
-                className="flex flex-col items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <figure className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
                 <img
                   src={lightbox.src}
                   alt={lightbox.alt}

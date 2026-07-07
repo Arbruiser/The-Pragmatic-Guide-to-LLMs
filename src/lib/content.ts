@@ -1,8 +1,20 @@
-import matter from "gray-matter";
-// Buffer polyfill needed by gray-matter in browser builds.
-import { Buffer } from "buffer";
-if (typeof globalThis !== "undefined" && !(globalThis as any).Buffer) {
-  (globalThis as any).Buffer = Buffer;
+import { load as parseYaml } from "js-yaml";
+
+/**
+ * Split a markdown string into its YAML frontmatter and body.
+ *
+ * Replaces `gray-matter`, which pulled Node's `Buffer`/`fs` into the browser
+ * bundle. Our content only uses a leading `---` fenced YAML block, so a small
+ * pure-JS parser handles it without any Node polyfills.
+ */
+function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
+  // Strip a leading BOM, then match an opening `---` fence at the very start.
+  const text = raw.replace(/^\uFEFF/, "");
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
+  if (!match) return { data: {}, content: text };
+  const parsed = parseYaml(match[1]);
+  const data = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+  return { data, content: text.slice(match[0].length) };
 }
 
 export interface PageFrontmatter {
@@ -39,18 +51,15 @@ function fileToSlug(filePath: string): string {
 
 export const pages: Page[] = Object.entries(rawModules)
   .map(([filePath, raw]) => {
-    const parsed = matter(raw);
+    const parsed = parseFrontmatter(raw);
     return {
       slug: fileToSlug(filePath),
       path: filePath.replace(/^\//, ""),
-      frontmatter: parsed.data as PageFrontmatter,
+      frontmatter: parsed.data as unknown as PageFrontmatter,
       body: parsed.content,
     };
   })
-  .sort(
-    (a, b) =>
-      (a.frontmatter.nav_order ?? 999) - (b.frontmatter.nav_order ?? 999)
-  );
+  .sort((a, b) => (a.frontmatter.nav_order ?? 999) - (b.frontmatter.nav_order ?? 999));
 
 export function findPage(slug: string): Page | undefined {
   return pages.find((p) => p.slug === slug);
@@ -192,9 +201,7 @@ export function buildNavTree(): NavNode[] {
 
   const sortChildren = (nodes: NavNode[]) => {
     nodes.sort(
-      (a, b) =>
-        (a.page.frontmatter.nav_order ?? 999) -
-        (b.page.frontmatter.nav_order ?? 999)
+      (a, b) => (a.page.frontmatter.nav_order ?? 999) - (b.page.frontmatter.nav_order ?? 999),
     );
     nodes.forEach((n) => sortChildren(n.children));
   };

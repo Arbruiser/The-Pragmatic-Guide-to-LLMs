@@ -14,11 +14,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { buildNavTree, type NavNode } from "@/lib/content";
 
 const logoLight = `${import.meta.env.BASE_URL}assets/lumi-logo-light.svg`;
@@ -38,16 +34,8 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="h-14 flex-row items-center border-b border-sidebar-border px-3 py-0">
         <Link to="/" className="block w-full">
-          <img
-            src={logoLight}
-            alt="LUMI AI Factory"
-            className="w-full h-auto block dark:hidden"
-          />
-          <img
-            src={logoDark}
-            alt="LUMI AI Factory"
-            className="w-full h-auto hidden dark:block"
-          />
+          <img src={logoLight} alt="LUMI AI Factory" className="w-full h-auto block dark:hidden" />
+          <img src={logoDark} alt="LUMI AI Factory" className="w-full h-auto hidden dark:block" />
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -83,9 +71,7 @@ function NavItem({ node, pathname }: { node: NavNode; pathname: string }) {
           className="h-auto min-h-8 py-1.5 [&>span:last-child]:whitespace-normal [&>span:last-child]:truncate-none"
         >
           <Link to={href}>
-            <span className="whitespace-normal leading-snug">
-              {node.page.frontmatter.title}
-            </span>
+            <span className="whitespace-normal leading-snug">{node.page.frontmatter.title}</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -114,10 +100,7 @@ function NavItem({ node, pathname }: { node: NavNode; pathname: string }) {
               const childHref = slugToHref(child.page.slug);
               return (
                 <SidebarMenuSubItem key={child.page.slug}>
-                  <SidebarMenuSubButton
-                    asChild
-                    isActive={pathname === childHref}
-                  >
+                  <SidebarMenuSubButton asChild isActive={pathname === childHref}>
                     <Link to={childHref}>{child.page.frontmatter.title}</Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>

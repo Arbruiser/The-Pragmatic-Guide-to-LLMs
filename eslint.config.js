@@ -36,5 +36,14 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // shadcn/ui files and the theme provider intentionally export helpers
+    // (variants, hooks) alongside components; fast-refresh granularity there
+    // is not worth restructuring generated code.
+    files: ["src/components/ui/**/*.{ts,tsx}", "src/lib/theme.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
   eslintPluginPrettier,
 );

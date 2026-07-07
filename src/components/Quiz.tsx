@@ -28,13 +28,9 @@ export function Quiz({ title, questions }: QuizData) {
   const selected = state?.selected ?? new Set<number>();
   const isLast = current === questions.length - 1;
   const allAnswered = questions.every((_, i) => states[i]?.answered);
-  const score = questions.reduce(
-    (acc, _, i) => acc + (states[i]?.score ?? 0),
-    0
-  );
+  const score = questions.reduce((acc, _, i) => acc + (states[i]?.score ?? 0), 0);
 
-  const setState = (next: AnswerState) =>
-    setStates((prev) => ({ ...prev, [current]: next }));
+  const setState = (next: AnswerState) => setStates((prev) => ({ ...prev, [current]: next }));
 
   const handleOptionClick = (idx: number) => {
     if (answered) return;
@@ -89,13 +85,9 @@ export function Quiz({ title, questions }: QuizData) {
       </div>
 
       <div className="px-5 py-4">
-        <p className="quiz-prompt mb-1 font-medium text-foreground">
-          {question.prompt}
-        </p>
+        <p className="quiz-prompt mb-1 font-medium text-foreground">{question.prompt}</p>
         {question.multi && (
-          <p className="mb-3 text-xs text-muted-foreground">
-            Select all that apply.
-          </p>
+          <p className="mb-3 text-xs text-muted-foreground">Select all that apply.</p>
         )}
 
         <ul className="mt-3 space-y-2">
@@ -116,14 +108,14 @@ export function Quiz({ title, questions }: QuizData) {
                     isSelected && !answered && "quiz-option-selected",
                     showCorrect && "quiz-option-correct",
                     showWrong && "quiz-option-wrong",
-                    answered && isSelected && "quiz-option-chosen"
+                    answered && isSelected && "quiz-option-chosen",
                   )}
                 >
                   <span
                     className={cn(
                       "quiz-marker flex h-5 w-5 shrink-0 items-center justify-center border text-xs",
                       question.multi ? "rounded-[4px]" : "rounded-full",
-                      answered && isSelected && "quiz-marker-filled"
+                      answered && isSelected && "quiz-marker-filled",
                     )}
                   >
                     {showCorrect && <Check className="h-3.5 w-3.5" />}
@@ -153,7 +145,7 @@ export function Quiz({ title, questions }: QuizData) {
                   ? "text-quiz-correct"
                   : state.score > 0
                     ? "text-quiz-accent"
-                    : "text-quiz-wrong"
+                    : "text-quiz-wrong",
               )}
             >
               {state.score === 1
@@ -163,9 +155,7 @@ export function Quiz({ title, questions }: QuizData) {
                   : "Not quite."}
             </p>
             {question.explanation && (
-              <p className="mt-1 text-sm leading-snug text-foreground/80">
-                {question.explanation}
-              </p>
+              <p className="mt-1 text-sm leading-snug text-foreground/80">{question.explanation}</p>
             )}
           </div>
         )}

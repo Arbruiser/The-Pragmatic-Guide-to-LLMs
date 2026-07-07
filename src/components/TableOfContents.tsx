@@ -64,7 +64,7 @@ export function TableOfContents({ items }: Props) {
       e.preventDefault();
       scrollToId(id);
     },
-    [scrollToId]
+    [scrollToId],
   );
 
   const replaceHash = React.useCallback((id: string | null) => {
@@ -111,7 +111,7 @@ export function TableOfContents({ items }: Props) {
 
     // Periodic re-scroll as a safety net for fonts/KaTeX/etc.
     const intervals = [50, 150, 300, 600, 1000, 1600].map((ms) =>
-      window.setTimeout(scrollToHeading, ms)
+      window.setTimeout(scrollToHeading, ms),
     );
     const unlockTimer = window.setTimeout(() => {
       restoringHashRef.current = false;
@@ -153,8 +153,7 @@ export function TableOfContents({ items }: Props) {
         document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
       const bottomRamp = Math.min(1, Math.max(0, (600 - remainingScroll) / 600));
       const easedRamp = bottomRamp * bottomRamp * (3 - 2 * bottomRamp);
-      const activationLine =
-        window.scrollY + baseOffset + (endOffset - baseOffset) * easedRamp;
+      const activationLine = window.scrollY + baseOffset + (endOffset - baseOffset) * easedRamp;
       let current: string | null = null;
       for (const h of headings) {
         const top = h.getBoundingClientRect().top + window.scrollY;
@@ -202,7 +201,7 @@ export function TableOfContents({ items }: Props) {
                   item.depth === 3 && "pl-6",
                   active
                     ? "border-lumi-magenta text-foreground font-medium"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
               >
                 {item.text}

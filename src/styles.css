@@ -274,6 +274,7 @@ html {
   pre,
   kbd {
     font-family: var(--font-mono);
+     font-variant-ligatures: none;
   }
 }
 
@@ -317,7 +318,7 @@ html {
    text, painted in LUMI magenta. Skipped automatically when the first block
    is a heading or callout (because :first-of-type only matches paragraphs). */
 .prose-lumi > p:first-of-type::first-letter {
-  font-family: var(--font-sans);
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
   font-size: 1.6em;
   font-weight: 700;
   color: var(--lumi-magenta);
@@ -427,14 +428,10 @@ html {
 .prose-lumi h4 {
   scroll-margin-top: 5rem;
   position: relative;
-  display: flex;
-  align-items: baseline;
-  gap: 0.4em;
 }
 
 .prose-lumi .heading-anchor {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   margin-left: 0.4em;
@@ -446,6 +443,7 @@ html {
   opacity: 0;
   transition: opacity 0.15s ease;
   text-decoration: none;
+   vertical-align: middle;
 }
 
 .prose-lumi .heading-anchor svg {

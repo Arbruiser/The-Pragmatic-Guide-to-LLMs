@@ -14,9 +14,7 @@ const STORAGE_KEY = "lumi-theme";
 
 function getSystem(): Resolved {
   if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -50,10 +48,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(t);
   }, []);
 
-  const value = React.useMemo(
-    () => ({ theme, resolved, setTheme }),
-    [theme, resolved, setTheme]
-  );
+  const value = React.useMemo(() => ({ theme, resolved, setTheme }), [theme, resolved, setTheme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

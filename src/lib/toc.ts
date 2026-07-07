@@ -39,7 +39,7 @@ export function extractToc(body: string): TocItem[] {
       .replace(/\*([^*]+)\*/g, "$1")
       .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
       .replace(/(?<![\s\d\\])%/g, "") // Remove glossary % markers
-      .replace(/\\%/g, "%");          // Unescape literal \%
+      .replace(/\\%/g, "%"); // Unescape literal \%
     out.push({ depth, text, id: slugger.slug(text) });
   }
 

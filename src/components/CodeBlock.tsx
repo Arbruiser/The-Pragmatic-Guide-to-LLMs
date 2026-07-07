@@ -22,7 +22,7 @@ const NANO_LANGS = new Set(["sh"]);
 function splitIntoLines(node: React.ReactNode): React.ReactNode[][] {
   if (node == null || node === false || node === true) return [[]];
   if (Array.isArray(node)) {
-    let out: React.ReactNode[][] = [[]];
+    const out: React.ReactNode[][] = [[]];
     for (const child of node) {
       const sub = splitIntoLines(child);
       if (sub.length === 0) continue;
@@ -44,7 +44,7 @@ function splitIntoLines(node: React.ReactNode): React.ReactNode[][] {
         React.cloneElement(
           node as React.ReactElement<{ children?: React.ReactNode }>,
           { key: `s${i}` },
-          ...lineChildren
+          ...lineChildren,
         ),
       ];
     });
@@ -52,17 +52,11 @@ function splitIntoLines(node: React.ReactNode): React.ReactNode[][] {
   return [[]];
 }
 
-function wrapLines(
-  children: React.ReactNode,
-  highlight?: Set<number>
-): React.ReactNode {
+function wrapLines(children: React.ReactNode, highlight?: Set<number>): React.ReactNode {
   const lines = splitIntoLines(children);
   while (lines.length > 1 && lines[lines.length - 1].length === 0) lines.pop();
   return lines.map((parts, i) => (
-    <span
-      key={i}
-      className={cn("code-line", highlight?.has(i + 1) && "code-line-hl")}
-    >
+    <span key={i} className={cn("code-line", highlight?.has(i + 1) && "code-line-hl")}>
       {parts.length > 0 ? parts : "\u200B"}
     </span>
   ));
@@ -76,9 +70,7 @@ function wrapTerminalLines(children: React.ReactNode): React.ReactNode {
       <span className="terminal-prompt" aria-hidden="true">
         user@lumi:~$&nbsp;
       </span>
-      <span className="terminal-command">
-        {parts.length > 0 ? parts : "\u200B"}
-      </span>
+      <span className="terminal-command">{parts.length > 0 ? parts : "\u200B"}</span>
     </span>
   ));
 }
@@ -107,14 +99,16 @@ export function CodeBlock({
     } else {
       text = ref.current?.innerText ?? "";
     }
+
+    // Strip out the zero-width spaces we injected for empty line rendering
+    text = text.replace(/\u200B/g, "");
+
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const wrapped = isTerminal
-    ? wrapTerminalLines(children)
-    : wrapLines(children, highlightLines);
+  const wrapped = isTerminal ? wrapTerminalLines(children) : wrapLines(children, highlightLines);
 
   if (isNano) {
     return (
@@ -133,16 +127,22 @@ export function CodeBlock({
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               {copied ? "Copied" : "Copy"}
             </button>
-            <span className="nano-btn" aria-hidden>−</span>
-            <span className="nano-btn" aria-hidden>▢</span>
-            <span className="nano-btn nano-btn-close" aria-hidden>×</span>
+            <span className="nano-btn" aria-hidden>
+              −
+            </span>
+            <span className="nano-btn" aria-hidden>
+              ▢
+            </span>
+            <span className="nano-btn nano-btn-close" aria-hidden>
+              ×
+            </span>
           </div>
         </div>
         <pre
           ref={ref}
           className={cn(
             "nano-body overflow-x-auto px-4 py-3 text-sm leading-relaxed",
-            showLineNumbers && "with-line-numbers"
+            showLineNumbers && "with-line-numbers",
           )}
         >
           <code className={className}>{wrapped}</code>
@@ -150,8 +150,6 @@ export function CodeBlock({
       </div>
     );
   }
-
-
 
   if (isTerminal) {
     return (
@@ -171,16 +169,22 @@ export function CodeBlock({
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               {copied ? "Copied" : "Copy"}
             </button>
-            <span className="terminal-btn" aria-hidden>−</span>
-            <span className="terminal-btn" aria-hidden>▢</span>
-            <span className="terminal-btn terminal-btn-close" aria-hidden>×</span>
+            <span className="terminal-btn" aria-hidden>
+              −
+            </span>
+            <span className="terminal-btn" aria-hidden>
+              ▢
+            </span>
+            <span className="terminal-btn terminal-btn-close" aria-hidden>
+              ×
+            </span>
           </div>
         </div>
         <pre
           ref={ref}
           className={cn(
             "overflow-x-auto px-4 py-3 text-sm leading-relaxed text-terminal-fg bg-terminal-bg",
-            showLineNumbers && "with-line-numbers"
+            showLineNumbers && "with-line-numbers",
           )}
         >
           <code className={className}>{wrapped}</code>
@@ -193,11 +197,7 @@ export function CodeBlock({
     <div className="group relative my-5 overflow-hidden rounded-lg border border-code-border bg-code-bg">
       <div className="flex items-center justify-between border-b border-code-border px-4 py-2 text-xs">
         <span className="flex items-center gap-2 font-mono text-foreground/60">
-          {title && (
-            <span className="font-sans font-medium text-foreground/80">
-              {title}
-            </span>
-          )}
+          {title && <span className="font-sans font-medium text-foreground/80">{title}</span>}
           {title && lang && <span className="opacity-40">·</span>}
           <span>{lang ?? "text"}</span>
         </span>
@@ -215,7 +215,7 @@ export function CodeBlock({
         ref={ref}
         className={cn(
           "overflow-x-auto px-4 py-3 text-sm leading-relaxed",
-          showLineNumbers && "with-line-numbers"
+          showLineNumbers && "with-line-numbers",
         )}
       >
         <code className={className}>{wrapped}</code>

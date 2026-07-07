@@ -42,10 +42,7 @@ const TITLE_RE = /^title:\s*(.*)$/i;
  * option selected subtracts credit, so blindly selecting everything cannot
  * earn full marks. The result is clamped to [0, 1].
  */
-export function scoreAnswer(
-  question: QuizQuestion,
-  selected: Set<number>
-): number {
+export function scoreAnswer(question: QuizQuestion, selected: Set<number>): number {
   const totalCorrect = question.options.filter((o) => o.correct).length;
   if (totalCorrect === 0) return 0;
 
@@ -131,9 +128,7 @@ export function parseQuiz(source: string): Quiz {
     questions.push({
       prompt,
       options,
-      explanation: explanationLines.length
-        ? explanationLines.join(" ").trim()
-        : undefined,
+      explanation: explanationLines.length ? explanationLines.join(" ").trim() : undefined,
       multi: correctCount > 1,
     });
   }

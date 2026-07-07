@@ -49,20 +49,27 @@ export function getGlossary(): Map<string, GlossaryEntry> {
   }
 
   const lines = page.body.split(/\r?\n/);
-  let seenSeparator = false;
+  // The glossary page can hold several term tables (e.g. one per chapter).
+  // `inTable` is true once we've passed a table's header separator; any
+  // non-table line (blank line, heading, `---` rule) ends the current table
+  // so the next table's header row is skipped instead of parsed as an entry.
+  let inTable = false;
 
   for (const line of lines) {
     const cells = parseRow(line);
-    if (!cells || cells.length < 2) continue;
-
-    if (isSeparatorRow(cells)) {
-      seenSeparator = true;
+    if (!cells || cells.length < 2) {
+      inTable = false;
       continue;
     }
 
-    // Skip rows until we've passed the header separator, so the literal
-    // "Term | Definition" header is never treated as an entry.
-    if (!seenSeparator) continue;
+    if (isSeparatorRow(cells)) {
+      inTable = true;
+      continue;
+    }
+
+    // Skip the literal "Term | Definition" header row that precedes each
+    // separator — only data rows below a separator become entries.
+    if (!inTable) continue;
 
     const term = stripInlineMarkdown(cells[0]);
     const definition = stripInlineMarkdown(cells[1]);
@@ -110,14 +117,14 @@ function buildPattern(glossary: Map<string, GlossaryEntry>): RegExp {
     .map(escapeRegExp);
   patternCache = new RegExp(
     `(?<![\\p{L}\\p{N}])((?:${terms.join("|")})s?)(?![\\p{L}\\p{N}])(%?)`,
-    "giu"
+    "giu",
   );
   return patternCache;
 }
 
 function spanFor(entry: GlossaryEntry, displayed: string): string {
   return `<span class="glossary-term" data-term="${escapeHtml(
-    entry.term
+    entry.term,
   )}">${escapeHtml(displayed)}</span>`;
 }
 
@@ -125,7 +132,7 @@ function processSegment(
   text: string,
   glossary: Map<string, GlossaryEntry>,
   pattern: RegExp,
-  linked: Set<string>
+  linked: Set<string>,
 ): string {
   pattern.lastIndex = 0;
   return text.replace(pattern, (full, termText: string, pct: string) => {
@@ -149,53 +156,62 @@ function processSegment(
   });
 }
 
+/** Resolve a term key (with singular fallback) and record it as linked. */
+function resolveEntry(
+  rawTerm: string,
+  glossary: Map<string, GlossaryEntry>,
+  linked: Set<string>,
+): GlossaryEntry | undefined {
+  const key = rawTerm.replace(/\s+/g, " ").trim().toLowerCase();
+  let entry = glossary.get(key);
+  let canonicalKey = key;
+  if (!entry && key.endsWith("s")) {
+    canonicalKey = key.slice(0, -1);
+    entry = glossary.get(canonicalKey);
+  }
+  if (!entry) return undefined;
+  linked.add(canonicalKey);
+  return entry;
+}
+
+/**
+ * Matches an inline-formatted token (code, bold, or italic) whose `%` marker
+ * sits either just inside the closing delimiter (`` `term%` ``, `*term%*`) or
+ * just outside it (`` `term`% ``, `*term*%`). Group 1 is the delimiter, group 2
+ * the inner text, group 3 the optional trailing marker.
+ */
+const FORMATTED_MARKER = /(\*\*|__|\*|_|`)([\s\S]+?)\1(%?)/g;
+
 function processLine(
   line: string,
   glossary: Map<string, GlossaryEntry>,
   pattern: RegExp,
-  linked: Set<string>
+  linked: Set<string>,
 ): string {
-  // Leave inline code spans and markdown links untouched.
-  const parts = line.split(/(`[^`]*`|\[[^\]]*\]\([^)]*\))/g);
+  // Leave markdown links untouched; everything else is processed.
+  const parts = line.split(/(\[[^\]]*\]\([^)]*\))/g);
   for (let i = 0; i < parts.length; i++) {
-    if (i % 2 === 1) {
-      // odd parts are protected (code / links)
-      
-      // Feature: `term%`
-      if (parts[i].startsWith("`") && parts[i].endsWith("%`")) {
-        const codeContent = parts[i].slice(1, -2).trim();
-        const key = codeContent.toLowerCase();
-        let entry = glossary.get(key);
-        let canonicalKey = key;
-        if (!entry && key.endsWith("s")) {
-          canonicalKey = key.slice(0, -1);
-          entry = glossary.get(canonicalKey);
-        }
-        if (entry) {
-          linked.add(canonicalKey);
-          const cleanCode = `\`${codeContent}\``;
-          parts[i] = spanFor(entry, cleanCode);
-        }
-      }
-      continue;
-    }
+    if (i % 2 === 1) continue; // odd parts are links
 
-    if (parts[i].startsWith("%") && i > 0 && parts[i - 1].startsWith("`") && parts[i - 1].endsWith("`")) {
-      const codeContent = parts[i - 1].slice(1, -1).trim();
-      const key = codeContent.toLowerCase();
-      let entry = glossary.get(key);
-      let canonicalKey = key;
-      if (!entry && key.endsWith("s")) {
-        canonicalKey = key.slice(0, -1);
-        entry = glossary.get(canonicalKey);
-      }
-      if (entry) {
-        linked.add(canonicalKey);
-        parts[i - 1] = spanFor(entry, parts[i - 1]);
-        parts[i] = parts[i].substring(1);
-      }
-    }
+    // 1) Formatted terms with the `%` marker inside or outside the delimiters.
+    parts[i] = parts[i].replace(
+      FORMATTED_MARKER,
+      (full, delim: string, inner: string, trailing: string) => {
+        let term: string;
+        if (inner.endsWith("%")) {
+          term = inner.slice(0, -1);
+        } else if (trailing === "%") {
+          term = inner;
+        } else {
+          return full; // no marker — leave the formatting for markdown to render
+        }
+        const entry = resolveEntry(term.trim(), glossary, linked);
+        if (!entry) return full;
+        return spanFor(entry, `${delim}${term}${delim}`);
+      },
+    );
 
+    // 2) Plain-text terms with a trailing `%`.
     parts[i] = processSegment(parts[i], glossary, pattern, linked);
     // Unescape \% to %
     parts[i] = parts[i].replace(/\\%/g, "%");
@@ -232,25 +248,3 @@ export function applyGlossaryMarkers(source: string): string {
   }
   return lines.join("\n");
 }
-
-/**
- * Remove the first contiguous markdown table block from a body. Used to hide
- * the raw glossary table once it's re-rendered as a styled list.
- */
-export function stripFirstTable(source: string): string {
-  const lines = source.split(/\r?\n/);
-  let start = -1;
-  let end = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/^\s*\|/.test(lines[i])) {
-      if (start === -1) start = i;
-      end = i;
-    } else if (start !== -1) {
-      break;
-    }
-  }
-  if (start === -1) return source;
-  lines.splice(start, end - start + 1);
-  return lines.join("\n").replace(/\n{3,}/g, "\n\n");
-}
-

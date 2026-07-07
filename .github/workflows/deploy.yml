@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so the sitemap can use real per-page git commit dates.
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -42,15 +45,11 @@ jobs:
             echo "VITE_BASE_PATH=/$REPO/" >> "$GITHUB_ENV"
             echo "VITE_SITE_URL=https://${OWNER_LC}.github.io/$REPO" >> "$GITHUB_ENV"
           fi
-          echo "VITE_GITHUB_REPO=$GITHUB_REPOSITORY" >> "$GITHUB_ENV"
-          echo "VITE_GITHUB_BRANCH=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
       - name: Build
         run: bun run build
         env:
           VITE_BASE_PATH: ${{ env.VITE_BASE_PATH }}
           VITE_SITE_URL: ${{ env.VITE_SITE_URL }}
-          VITE_GITHUB_REPO: ${{ env.VITE_GITHUB_REPO }}
-          VITE_GITHUB_BRANCH: ${{ env.VITE_GITHUB_BRANCH }}
       - name: Prepare static site
         run: |
           # TanStack Start SPA mode emits a single _shell.html in dist/client.

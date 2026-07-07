@@ -18,13 +18,7 @@ export function Header() {
       <SidebarTrigger className="text-foreground" />
       <div className="ml-auto flex items-center gap-1">
         {siteConfig.auxLinks.map((link) => (
-          <Button
-            key={link.href}
-            variant="ghost"
-            size="sm"
-            asChild
-            className="text-foreground/80"
-          >
+          <Button key={link.href} variant="ghost" size="sm" asChild className="text-foreground/80">
             <a href={link.href} target="_blank" rel="noreferrer noopener">
               {link.label}
               <ExternalLink className="ml-1 h-3.5 w-3.5" />
@@ -34,11 +28,7 @@ export function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Toggle theme">
-              {resolved === "dark" ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              )}
+              {resolved === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface CalloutProps {
   variant: "note" | "warning" | "info" | "tip" | "command";
-  title?: string;
+  title?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -38,12 +38,7 @@ export function Callout({ variant, title, children }: CalloutProps) {
   }
 
   return (
-    <aside
-      className={cn(
-        "my-6 overflow-hidden rounded-lg border",
-        variantStyles[variant]
-      )}
-    >
+    <aside className={cn("my-6 overflow-hidden rounded-lg border", variantStyles[variant])}>
       <div className="flex">
         <div className={cn("w-1.5 shrink-0", variantAccent[variant])} />
         <div className="flex-1 px-5 py-4">
@@ -63,7 +58,7 @@ function CommandCallout({
   title,
   children,
 }: {
-  title?: string;
+  title?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [copied, setCopied] = React.useState(false);
@@ -77,12 +72,7 @@ function CommandCallout({
   };
 
   return (
-    <aside
-      className={cn(
-        "my-6 overflow-hidden rounded-lg border",
-        variantStyles.command
-      )}
-    >
+    <aside className={cn("my-6 overflow-hidden rounded-lg border", variantStyles.command)}>
       <div className="flex items-center justify-between border-b border-callout-command-border bg-callout-command-bg/50 px-4 py-2">
         <span className="text-xs font-semibold tracking-wide uppercase text-foreground/70">
           {title ?? "Command"}
@@ -96,10 +86,7 @@ function CommandCallout({
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <div
-        ref={ref}
-        className="callout-command-body px-5 py-3 font-mono text-sm text-foreground"
-      >
+      <div ref={ref} className="callout-command-body px-5 py-3 font-mono text-sm text-foreground">
         {children}
       </div>
     </aside>

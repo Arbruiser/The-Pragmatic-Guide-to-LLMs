@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { findPage, getPageDescription } from "@/lib/content";
 import { PageLayout } from "@/components/PageLayout";
-import { siteConfig } from "../../site.config";
+import { siteConfig, absoluteUrl } from "../../site.config";
 
 export const Route = createFileRoute("/")({
   component: IndexPage,
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/")({
     const description = page
       ? getPageDescription(page) || siteConfig.description
       : siteConfig.description;
+    const url = absoluteUrl("/");
     return {
       meta: [
         { title },
@@ -20,9 +21,9 @@ export const Route = createFileRoute("/")({
         { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
-        { property: "og:url", content: "/" },
+        { property: "og:url", content: url },
       ],
-      links: [{ rel: "canonical", href: "/" }],
+      links: [{ rel: "canonical", href: url }],
       scripts: [
         {
           type: "application/ld+json",

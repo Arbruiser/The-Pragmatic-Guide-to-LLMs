@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { findPage, getBreadcrumbs, getPageDescription } from "@/lib/content";
 import { PageLayout } from "@/components/PageLayout";
-import { siteConfig } from "../../site.config";
+import { siteConfig, absoluteUrl } from "../../site.config";
 
 export const Route = createFileRoute("/$")({
   component: CatchAllPage,
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/$")({
     }
 
     const description = getPageDescription(page) || siteConfig.description;
-    const url = `/${slug}`;
+    const url = absoluteUrl(`/${slug}`);
     const crumbs = getBreadcrumbs(slug);
 
     return {
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/$")({
               "@type": "ListItem",
               position: i + 1,
               name: crumb.frontmatter.title,
-              item: crumb.slug === "" ? "/" : `/${crumb.slug}`,
+              item: absoluteUrl(crumb.slug === "" ? "/" : `/${crumb.slug}`),
             })),
           }),
         },
