@@ -15,7 +15,7 @@ This guide is primarily for people from industry — such as startup founders, p
 
 If you have watched high-level LLM presentations and felt like you still don't understand the underlying mechanics well enough to make architectural decisions, this guide is for you. It specifically collects and corrects the common pitfalls and misunderstandings people often have after listening to those generic overviews. For example, it aims to prevent costly mistakes like attempting to fine-tune a model on a database of company documents just to answer questions about them (when Retrieval-Augmented Generation is the correct tool).
 
-Engineers, data scientists, and academics will also find this material useful as a bridge between high-level AI concepts and the realities of high-performance computing hardware.
+Engineers, data scientists, and academics may also find this material useful as a bridge between high-level AI concepts and the realities of high-performance computing hardware.
 
 ## What you'll learn
 
