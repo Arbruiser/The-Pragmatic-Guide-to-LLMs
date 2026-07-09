@@ -3,7 +3,7 @@ title: "5. Multimodal LLMs"
 nav_order: 6
 ---
 
-# Multimodal LLMs: From Pixels to Tokens
+# Multimodal LLMs: from pixels to tokens
 
 Modern models don't just read text — you can paste in a screenshot, a chart, or a photo and ask questions about it. But everything in the previous chapters described a machine that predicts *text tokens*. So how does a language model "see"? This chapter follows an image through the pipeline — from raw pixels to vectors the model can reason about — and explains the two ways of gluing vision and language together: **late fusion%** and **early fusion%**. It builds directly on the embeddings and attention machinery from [Chapter 4](4-attention).
 
@@ -81,7 +81,7 @@ The emerging twist is the reverse: using *vision* to compress *text*. Rendering 
 - **Late fusion** bolts a pre-trained vision encoder (like CLIP) onto an LLM via a small **projector** network; **early fusion** feeds raw patches into one natively multimodal model that switches attention masking by token type.
 - Text resists the aggressive compression that works on images — but rendering documents *as* images is an emerging way to exploit visual compression for dense text.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: Multimodal LLMs

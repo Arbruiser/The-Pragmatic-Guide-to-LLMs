@@ -3,7 +3,7 @@ title: "2. Choosing a Model"
 nav_order: 3
 ---
 
-# Choosing a Model
+# Choosing a model
 
 You are likely already familiar with proprietary language models like OpenAI's GPT series or Anthropic's Claude. On LUMI, however, you have the computing power to run, modify, and fine-tune% **open-weight%** models — and choosing the right one is the first practical decision of any LLM project.
 
@@ -50,7 +50,7 @@ To the model, these reasoning tokens are exactly the same as normal text tokens.
 - Benchmarks are a starting point, not a verdict — contamination and over-optimisation make them unreliable. Test candidates on your own use-case.
 - Download the **Instruct** version unless you are fine-tuning from scratch.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: Choosing a model

@@ -3,7 +3,7 @@ title: "7. Customising Models"
 nav_order: 8
 ---
 
-# Customising Models for Your Data
+# Customising models for your data
 
 Pre-trained models are impressive generalists, but what if you need a model tailored to your organisation? Whether you need to change *how* the model speaks (like adopting the format of legal contracts) or give it access to *new facts* (like querying your proprietary product documentation), there are multiple ways to bridge the gap. This chapter walks you through the options.
 
@@ -79,7 +79,7 @@ That analogy unpacks into a practical decision list:
 - LoRA gives most of the benefit of full fine-tuning at ~1.1–1.2× the model's memory footprint instead of 4–8×.
 - RAG keeps knowledge outside the model, so updating a document never requires retraining.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: Customising models

@@ -1,9 +1,9 @@
 ---
-title: "A Technical Primer on Large Language Models"
+title: "The Pragmatic Guide to LLMs"
 nav_order: 1
 ---
 
-# A Technical Primer on Large Language Models
+# The pragmatic guide to LLMs
 
 When you run your first AI job on LUMI — perhaps a Large Language Model generating text from a prompt — you might wonder: what actually happens inside those GPUs%? What do model names like "Qwen3.6-35B-A3B" mean? Why do we use tools like vLLM%, and how many GCDs% should you actually request?
 

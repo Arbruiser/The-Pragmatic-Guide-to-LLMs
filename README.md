@@ -1,4 +1,4 @@
-# A Technical Primer on Large Language Models
+# The Pragmatic Guide to LLMs
 
 This repository hosts an educational onboarding guide for running open-weight Large Language Models (LLMs) on the **LUMI supercomputer**. 
 

@@ -3,7 +3,7 @@ title: "3. Inside the Architecture"
 nav_order: 4
 ---
 
-# Inside the Architecture
+# Inside the architecture
 
 Not all LLMs are built the same way, and understanding their internal mechanics is key to running them efficiently. This chapter covers the two decisions that most affect your GPU% usage: how a model organises its parameters% (dense% vs. Mixture of Experts%) and how its attention% mechanism manages memory.
 
@@ -53,7 +53,7 @@ But how does a token actually "look" at other tokens? It uses a system of **Quer
 
 When the model processes a token, it matches that token's **Query** against the **Keys** of all previous tokens. When there's a strong match, the **Value** of the matched token is blended into the current token, updating its meaning with that context.
 
-### The KV Cache: Memory cost of attention
+### The KV cache: memory cost of attention
 
 During text generation, the model generates responses one token at a time. To do this, the new token needs to check its Query against the Keys and Values of *all* the tokens that came before it. 
 
@@ -71,7 +71,7 @@ Instead of recalculating the Keys and Values for the entire conversation history
 - The KV Cache is the model's working memory in VRAM, and it grows with context length and concurrent users.
 - Modern models use architectural tricks to shrink the KV Cache, allowing them to serve many more users per GPU.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: Architecture

@@ -3,7 +3,7 @@ title: "4. Deep Dive: The Attention Mechanism"
 nav_order: 5
 ---
 
-# Deep Dive: The Attention Mechanism
+# Deep dive: the attention mechanism
 
 [Chapter 3](3-model-architecture) introduced attention as the mechanism that lets a model work out which tokens in the context are relevant to each other, and the KV Cache% as its memory cost. This page opens the black box: what actually happens, step by step, when a transformer "pays attention". You don't need this level of detail to size a job on LUMI — but if you want to understand *why* the KV Cache exists, why Keys and Values can be cached while Queries are thrown away, and what tricks like GQA and MLA actually do, read on.
 
@@ -130,7 +130,7 @@ The solution is remarkably simple. Instead of a pure sliding window, you permane
 - Keys and Values of past tokens never change — that is why they can be cached (the KV Cache) while Queries are used once and discarded.
 - GQA shrinks the KV Cache by sharing **K**/**V** heads; MLA shrinks it further by compressing **K** and **V** into a small latent vector per token.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: The attention mechanism

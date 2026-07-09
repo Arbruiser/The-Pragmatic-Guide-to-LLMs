@@ -3,7 +3,7 @@ title: "1. How LLMs Work"
 nav_order: 2
 ---
 
-# How LLMs Work
+# How LLMs work
 
 Before diving into architectures and hardware, it's worth understanding what a Large Language Model fundamentally *does*. Everything else in this guide — memory requirements, performance bottlenecks, fine-tuning strategies — follows from the simple mechanics described in this chapter.
 
@@ -58,7 +58,7 @@ This is true even for the polished chat websites. When you press *send* in ChatG
 - Parameters are the learned weights; more parameters mean more capability but also more hardware.
 - Models are stateless: your application must resend the conversation history, within the model's context window, on every request.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: How LLMs work

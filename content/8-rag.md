@@ -96,7 +96,7 @@ You cannot optimise what you cannot measure, and manual output inspection does n
 - Advanced techniques like semantic chunking, HyDE, reranking, and emotional prompt engineering can drastically improve accuracy.
 - Evaluate the pipeline holistically. Tools like RAGAS score faithfulness, answer relevance, and context relevance separately so you know exactly which stage of the pipeline to fix.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: Retrieval-Augmented Generation

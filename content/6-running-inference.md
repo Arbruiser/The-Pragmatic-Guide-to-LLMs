@@ -3,7 +3,7 @@ title: "6. Running Inference on LUMI"
 nav_order: 7
 ---
 
-# Running Inference on LUMI
+# Running inference on LUMI
 
 **Inference** is the process of using an already-trained model to generate outputs — answering questions, writing code, summarising documents. This is what happens when you load a pre-trained model and ask it to generate text. This chapter covers the practical side: where the performance bottlenecks are, how to split models across GPUs, how many GCDs to request, and which engine to use.
 
@@ -111,7 +111,7 @@ There are two main patterns for running inference on a supercomputer:
 - On LUMI, avoid FP8/FP4 quantised models — the MI250X must emulate them slowly. Integer formats (INT8, AWQ/GPTQ) are the workable option.
 - Use vLLM: offline batch mode for large datasets, server-client mode for interactive applications.
 
-## 📝 Check your knowledge
+## Check your knowledge
 
 ```quiz
 title: Inference on LUMI
