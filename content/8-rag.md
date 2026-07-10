@@ -44,7 +44,7 @@ When a user asks a question, that question is encoded into an embedding using th
 - **Hybrid retrieval** combines both methods to get the best of both worlds, and is the common default in modern systems.
 
 **3. Generation.** 
-The retrieved chunks are appended to the user's query in a new, hidden system prompt—a technique called **in-prompt augmentation** (or fusion-in-decoder). The LLM is instructed to answer the user's query using the provided context. 
+The retrieved chunks are appended to the user's query in a new, hidden system prompt—a technique called **in-prompt augmentation** (or in-context learning). The LLM is instructed to answer the user's query using the provided context. 
 
 ## Improving each stage
 
@@ -58,7 +58,7 @@ The way you cut your documents into chunks drastically affects the quality of th
 
 ### Retrieval techniques
 
-- **Query classification:** Not every question needs retrieval. If the model already knows the answer (e.g., "What is 2+2?"), appending irrelevant retrieved context adds noise and *hurts* performance. Adding a small, fast classifier (like [FLARE](https://arxiv.org/abs/2305.06983), which predicts future sentences and triggers retrieval only if confidence is low) to decide "retrieve or not" both improves accuracy and cuts latency.
+- **Query classification:** Not every question needs retrieval. If the model already knows the answer (e.g., "What is 2+2?"), appending irrelevant retrieved context adds noise and *hurts* performance. Using a small classifier to decide "retrieve or not" improves accuracy and cuts latency. A related advanced method is **active retrieval** (like [FLARE](https://arxiv.org/abs/2305.06983)), where the LLM continuously monitors its own confidence as it generates the answer, and triggers a search mid-sentence if its confidence drops.
 - **Query rewriting:** User queries are often poorly phrased for search. Prompting a fast LLM to rewrite or expand the query before retrieval is a cheap, highly effective fix.
 - **HyDE (Hypothetical Document Embeddings):** Questions and answers often look mathematically different in embedding space. Instead of embedding the *question*, an LLM first generates a hypothetical *answer*—fake, possibly wrong in its facts, but shaped exactly like a real document. This fake document's embedding is then used for the search, reliably landing closer to the actual target documents in the vector database.
 - **Reranking:** The initial retriever's similarity ranking is incredibly fast but somewhat crude. A second, more careful (and computationally expensive) model re-scores the top candidates against the query. Studies consistently find reranking to be one of the best value-for-compute upgrades.
@@ -69,7 +69,7 @@ The way you cut your documents into chunks drastically affects the quality of th
 
 ### Generation techniques
 
-- **Prompt engineering:** Carefully instructing the model how to use the context. Even small prompt changes measurably shift RAG accuracy. Surprisingly, research shows that adding emotional weight to the prompt (e.g., *"Make sure the answer is 100% correct because my life depends on it"*) can lead to significantly higher performance.
+- **Prompt engineering:** Carefully instructing the model how to use the context. Even small prompt changes measurably shift RAG accuracy. Testing different ways to separate the retrieved text from the user's instructions is often the easiest way to improve your results.
 - **Majority voting:** Because LLM sampling is not deterministic, generating several answers to the same prompt and taking the most common one buys accuracy at the cost of extra generation compute.
 
 However, because all pipeline components are deeply interconnected, applying these techniques requires holistic tuning—a change in your chunking strategy, for instance, might necessitate adjusting your retriever's top-*K* value or rewriting your prompt.

@@ -53,7 +53,7 @@ The projected visual tokens are then simply inserted into the LLM's input sequen
 
 The ViT-plus-projector approach was a stepping stone, and it has a blind spot: the image is processed in *isolation*, without knowing what the user asked. If the question is *"What's wrong with the tire?"*, an isolated vision encoder happily wastes compute analysing the sunset in the background.
 
-State-of-the-art "omni" models discard the separate vision tower and go **early fusion** — natively multimodal. Meta's Chameleon demonstrates this openly; Google's Gemini and OpenAI's GPT-4o are widely believed to work the same way, though their exact internals are not public. In open early-fusion models, three ingredients make it work:
+State-of-the-art "omni" models discard the separate vision tower and go **early fusion** — natively multimodal. While models like Google's Gemini or OpenAI's GPT are widely believed to use early fusion but keep their exact internals secret, open models like Meta's Chameleon show how this works: they convert both images and text into a shared format from the very beginning. In these early-fusion architectures, a few common ingredients make it work:
 
 1. **Direct patch ingestion:** "Raw" image patches (flattened patches that only represent pixel colours) are fed straight into the main model from layer 1 — no separate ViT, no projector.
 2. **Dynamic attention:** The attention heads% switch their masking rules on the fly: text tokens use strict causal (backwards-only) attention, but image tokens use bidirectional (unmasked) attention *among themselves*. Every patch in an image can see every other patch in that same image, though they still cannot peek at any future text tokens.

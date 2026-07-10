@@ -20,7 +20,7 @@ The vast majority of a model's parameters (its learned weights) live inside thes
 The two main architectural approaches determine how the model uses its FFN parameters:
 
 **Dense models.**
-In a **dense** model (such as Meta's Llama), the FFN is one massive, unified block. Every single parameter is active for processing each individual token.
+In a **dense** model (such as Meta's Llama 3), the FFN is one massive, unified block. Every single parameter is active for processing each individual token.
 
 - **Slightly higher quality:** Because all parameters participate in the math of every token, dense models are best when you want to squeeze the absolute maximum reasoning quality out of the model's size (and the VRAM% it consumes).
 - **Computationally expensive:** Every token generated requires the math of all parameters (e.g., all 35B parameters in a 35B dense model), making it slower to run and limiting how many simultaneous requests it can process.
@@ -28,7 +28,7 @@ In a **dense** model (such as Meta's Llama), the FFN is one massive, unified blo
 **Mixture of Experts (MoE).**
 In a **Mixture of Experts** (MoE) model (such as Qwen3.6-35B-A3B or Mixtral-8x7B), the giant FFN is split into many smaller, specialised sub-networks called "experts." Instead of activating all parameters, a built-in "router" dynamically selects only a few experts to process each individual token.
 
-- **Specialised routing:** MoE models achieve almost the same quality as dense models of equivalent size because they route dynamically. Think of it this way: if the next token is about math, the router sends it to the math experts; it doesn't waste compute activating "poetry experts."
+- **Specialised routing:** An MoE model will underperform a dense model with the same *total* parameter count, but it will significantly outperform a dense model with the same *active* parameter count, using a fraction of the compute. It achieves this by routing dynamically. You can think of this conceptually like routing a math question to "math experts" instead of "poetry experts" — though in reality, experts specialise at the token level (e.g., one expert might handle verbs, another handles punctuation or specific syntax patterns), rather than high-level human domains.
 - **High throughput (fast):** Because only a small fraction of the parameters are active per token, the GPU has more compute power left over. This allows the model to process **far more prompts simultaneously**, making MoE ideal for large-scale workloads.
 - **High memory footprint:** The full model must still fit in GPU memory (all 35B parameters of a 35B MoE model), even though the computation per token only uses a fraction of that (e.g., 3B active parameters).
 

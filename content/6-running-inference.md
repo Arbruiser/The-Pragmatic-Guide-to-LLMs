@@ -54,11 +54,11 @@ Now the practical part: how many GCDs should you request for your model? In the 
 | 35B parameters | ~70 GB | **2 GCDs** |
 | 70B parameters | ~140 GB | **4 GCDs** (3 is unsupported/inefficient) |
 
-> [!warning] The power-of-two / GQA rule
-> In vLLM, `tensor_parallel_size` must evenly divide the number of Key-Value (KV) attention heads in the model. Because many modern models use Grouped-Query Attention (GQA) with an even number of KV heads, your tensor parallel size must be divisible by 2 — meaning you can only partition across **1, 2, 4, or 8 GCDs**. Attempting to split a model across 3 GCDs will fail.
+> [!warning] The divisibility rule
+> In vLLM, `tensor_parallel_size` must evenly divide the number of Key-Value (KV) attention heads in the model. For example, if a model has 8 KV heads, you can partition it across 1, 2, 4, or 8 GCDs. If it has 12 KV heads, you could also use 3 or 6 GCDs. Attempting to split a model across a number of GPUs that doesn't evenly divide its KV heads will fail.
 
 > [!tip] Planning for KV Cache headroom
-> The recommended sizes above leave healthy headroom for vLLM's KV Cache and runtime activations. If your model's weight size is very close to your memory limit (e.g., a 60B model requiring ~120 GB on 2 GCDs with 128 GB total), do not request 1 extra GCD (3 total) — the divisibility rule forbids it. Scale to the next power of two (**4 GCDs**) instead.
+> The recommended sizes above leave healthy headroom for vLLM's KV Cache and runtime activations. If your model's weight size is very close to your memory limit (e.g., a 60B model requiring ~120 GB on 2 GCDs with 128 GB total), do not request just 1 extra GCD (3 total) if the divisibility rule forbids it. Scale to the next power of two (**4 GCDs**) instead.
 
 ## Quantisation: reducing memory requirements
 
@@ -85,7 +85,7 @@ You might assume that setting `Temperature=0` forces the model to be 100% determ
 
 The culprit is the GPU's microscopic floating-point math. GPUs achieve their blistering speeds by running thousands of calculations simultaneously and adding up the results in whatever order they finish. Because of how **floating-point%** numbers work in computer memory, `A + B + C` is not always exactly equal to `C + A + B` — there are tiny rounding differences at the very limits of precision. 
 
-If the model is torn between two tokens (e.g., token A has a 30.00001% probability and token B has a 30.99999% probability), that tiny, unpredictable mathematical "noise" from the GPU's random execution order is enough to flip their rankings. Once the first token changes, the entire rest of the sentence branches off in a new direction.
+If the model is torn between two tokens (e.g., token A has a 31% probability and token B has a 30.99999% probability), that tiny, unpredictable mathematical "noise" from the GPU's random execution order is enough to flip their rankings. Once the first token changes, the entire rest of the sentence branches off in a new direction.
 
 It is possible to force the GPU to execute operations in a strict, predictable order to guarantee true determinism (e.g., using `torch.use_deterministic_algorithms(True)` in PyTorch). However, doing so destroys the GPU's ability to schedule work dynamically — forcing parallel threads to constantly wait in line for each other. This imposes a significant performance penalty. For production inference, we happily accept the microscopic randomness in exchange for maximum speed.
 

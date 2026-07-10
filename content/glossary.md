@@ -72,7 +72,6 @@ nav_order: 99
 | **GCD** | Graphics Compute Die; a physical subdivision of a GPU. On LUMI, each AMD MI250X GPU contains 2 GCDs, acting as independent devices. |
 | **GPU** | Graphics Processing Unit; a highly parallel processor originally designed for graphics, but perfectly suited for the massive matrix math required by LLMs. |
 | **HPC** | High-Performance Computing; the use of supercomputers and parallel processing to solve complex computational problems. |
-| **latent space** | A mathematical space where meaning is represented geometrically; concepts with similar meanings are positioned closer together. |
 | **matrix** | A two-dimensional grid of numbers. LLM parameters are stored as large matrices, and generating text involves multiplying them. |
 | **node** | A single standalone computer within a supercomputer cluster, containing its own CPUs, GPUs, and memory. |
 | **vector** | An ordered list of numbers. In LLMs, vectors are used to represent the mathematical "meaning" of a token. |
@@ -81,3 +80,5 @@ nav_order: 99
 | **noun** | A word used to name a person, place, thing, or abstract idea (for example: "cat", "supercomputer", "attention"). |
 | **subject** | The "main actor" in a sentence; the entity that is performing the action. |
 | **vanishing gradients** | A problem in deep neural networks where the learning signal becomes too small as it travels backwards through many layers, causing the earliest layers to stop learning effectively. |
+| **scraping** | The automated process of extracting large amounts of data from websites. |
+| **unaligned** | A state where a model's outputs do not adhere to intended safety, ethical, or instructional guidelines, often producing harmful, biased, or unhelpful text. |
