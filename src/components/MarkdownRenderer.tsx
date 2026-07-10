@@ -22,7 +22,7 @@ import { Quiz } from "./Quiz";
 import { parseQuiz } from "@/lib/quiz";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { applyGlossaryMarkers, lookupTerm } from "@/lib/glossary";
+import { applyGlossaryMarkers, lookupTerm, splitCodeGlossaryMarkers } from "@/lib/glossary";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 /** Hoist `data.meta` from <code> onto its parent <pre> so it survives the
@@ -239,6 +239,13 @@ function formatInlineCode(node: React.ReactNode): React.ReactNode {
     return <span className="whitespace-nowrap">{node}</span>;
   }
 
+  // Mixed content (e.g. glossary triggers) can't be re-sliced from plain
+  // text without dropping the elements — let it wrap naturally instead.
+  const parts = React.Children.toArray(node);
+  if (parts.some((p) => typeof p !== "string" && typeof p !== "number")) {
+    return node;
+  }
+
   const start = text.slice(0, MIN_CHUNK);
   const middle = text.slice(MIN_CHUNK, -MIN_CHUNK);
   const end = text.slice(-MIN_CHUNK);
@@ -369,9 +376,27 @@ export function MarkdownRenderer({ source, enableGlossary = true }: MarkdownRend
           },
           code({ className, children }) {
             if (!className) {
+              // Resolve `Term%` glossary markers that sit inside the code
+              // content — the preprocessor leaves those untouched because raw
+              // HTML between backticks would render as literal text.
+              let content: React.ReactNode = children;
+              const isPlainText =
+                typeof children === "string" ||
+                (Array.isArray(children) && children.every((c) => typeof c === "string"));
+              if (enableGlossary && isPlainText && nodeToText(children).includes("%")) {
+                content = splitCodeGlossaryMarkers(nodeToText(children)).map((seg, i) =>
+                  seg.term ? (
+                    <GlossaryTerm key={i} term={seg.term}>
+                      {seg.text}
+                    </GlossaryTerm>
+                  ) : (
+                    <React.Fragment key={i}>{seg.text}</React.Fragment>
+                  ),
+                );
+              }
               return (
                 <code className="rounded bg-inline-code-bg px-1.5 py-0.5 font-mono text-[0.9em] text-inline-code-fg break-words">
-                  {formatInlineCode(children)}
+                  {formatInlineCode(content)}
                 </code>
               );
             }

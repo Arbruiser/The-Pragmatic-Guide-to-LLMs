@@ -87,6 +87,8 @@ export function TableOfContents({ items }: Props) {
     restoringHashRef.current = true;
 
     const scrollToHeading = () => {
+      // Stop re-anchoring as soon as the user scrolls on their own.
+      if (!restoringHashRef.current) return;
       const target = document.getElementById(hash);
       if (!target) return;
       const top = target.getBoundingClientRect().top + window.scrollY - 80;
