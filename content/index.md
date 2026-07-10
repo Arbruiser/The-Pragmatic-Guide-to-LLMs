@@ -35,3 +35,7 @@ The guide is split into eight chapters, designed to be read in order — each bu
 - **Hover over dashed-underlined terms** to see their definitions. All terms are also collected in the [Glossary](glossary).
 - **Each chapter ends with a short quiz** so you can check your understanding before moving on.
 - Chapters link to hands-on resources — most importantly the [LUMI AI Guide](https://github.com/Lumi-supercomputer/LUMI-AI-Guide), which contains complete, copy-pasteable code examples for everything discussed here.
+
+## Transparency Note on AI Assistance
+
+This material was prepared with the support of AI tools (Google Gemini and Anthropic Claude), which were used exclusively to refine phrasing and ensure clarity. All core concepts, instructional content, and overarching structure were entirely conceived, drafted, and rigorously reviewed by the authors and the LUMI AI Factory staff.
