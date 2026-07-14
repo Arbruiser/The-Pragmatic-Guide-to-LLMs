@@ -441,8 +441,7 @@ export function MarkdownRenderer({ source, enableGlossary = true }: MarkdownRend
               <button
                 type="button"
                 onClick={() => setLightbox({ src: resolved, alt: altText })}
-                className="cursor-zoom-in border-0 bg-transparent p-0 max-w-full mx-auto"
-                style={{ display: "block", marginTop: "1.25rem", marginBottom: "1.25rem" }}
+                className="cursor-zoom-in border-0 bg-transparent p-0 w-full mx-auto block"
                 aria-label={altText ? `Open image: ${altText}` : "Open image"}
               >
                 <img

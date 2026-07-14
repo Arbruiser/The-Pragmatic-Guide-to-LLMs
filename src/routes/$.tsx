@@ -6,7 +6,7 @@ import { siteConfig, absoluteUrl } from "../../site.config";
 export const Route = createFileRoute("/$")({
   component: CatchAllPage,
   head: ({ params }) => {
-    const slug = (params as { _splat?: string })._splat ?? "";
+    const slug = ((params as { _splat?: string })._splat ?? "").replace(/\/+$/, "");
     const page = findPage(slug);
     const title = page?.frontmatter.title
       ? `${page.frontmatter.title} — ${siteConfig.title}`
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/$")({
     }
 
     const description = getPageDescription(page) || siteConfig.description;
-    const url = absoluteUrl(`/${slug}`);
+    const url = absoluteUrl(slug === "" ? "/" : `/${slug}/`);
     const crumbs = getBreadcrumbs(slug);
 
     return {
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/$")({
               "@type": "ListItem",
               position: i + 1,
               name: crumb.frontmatter.title,
-              item: absoluteUrl(crumb.slug === "" ? "/" : `/${crumb.slug}`),
+              item: absoluteUrl(crumb.slug === "" ? "/" : `/${crumb.slug}/`),
             })),
           }),
         },
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/$")({
 
 function CatchAllPage() {
   const params = Route.useParams() as { _splat?: string };
-  const slug = params._splat ?? "";
+  const slug = (params._splat ?? "").replace(/\/+$/, "");
   const page = findPage(slug);
   if (!page) throw notFound();
   return <PageLayout page={page} />;

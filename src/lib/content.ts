@@ -186,6 +186,10 @@ export function buildNavTree(): NavNode[] {
   const roots: NavNode[] = [];
 
   for (const page of pages) {
+    // The glossary is a reference appendix, not part of the reading flow: it
+    // gets a pinned link in the sidebar footer instead of a nav entry, and is
+    // skipped by prev/next navigation (which flattens this tree).
+    if (page.slug === "glossary") continue;
     const node: NavNode = { page, children: [] };
     byTitle.set(page.frontmatter.title, node);
   }

@@ -59,7 +59,7 @@ function sitemapPlugin(): Plugin {
         if (!base) return;
         const urls = files.map((f) => {
           const slug = fileToSlug(f);
-          const loc = slug === "" ? `${base}/` : `${base}/${slug}`;
+          const loc = slug === "" ? `${base}/` : `${base}/${slug}/`;
           const lastmod = lastModified(f);
           return `  <url><loc>${loc}</loc><lastmod>${lastmod}</lastmod></url>`;
         });
@@ -86,7 +86,7 @@ function sitemapPlugin(): Plugin {
 function contentPages() {
   const slugs = walkMd("content").map(fileToSlug);
   const paths = new Set<string>(["/"]);
-  for (const slug of slugs) paths.add(slug === "" ? "/" : `/${slug}`);
+  for (const slug of slugs) paths.add(slug === "" ? "/" : `/${slug}/`);
   return Array.from(paths).map((path) => ({
     path,
     prerender: { enabled: true, crawlLinks: true },

@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { BookMarked, ChevronRight } from "lucide-react";
 import * as React from "react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -15,7 +16,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { buildNavTree, type NavNode } from "@/lib/content";
+import { buildNavTree, findPage, type NavNode } from "@/lib/content";
 
 const logoLight = `${import.meta.env.BASE_URL}assets/lumi-logo-light.svg`;
 const logoDark = `${import.meta.env.BASE_URL}assets/lumi-logo-dark.svg`;
@@ -26,8 +27,11 @@ function slugToHref(slug: string) {
 
 export function AppSidebar() {
   const tree = React.useMemo(() => buildNavTree(), []);
+  const glossary = React.useMemo(() => findPage("glossary"), []);
   const pathname = useRouterState({
-    select: (s) => s.location.pathname,
+    // Strip the trailing slash (trailingSlash: "always") so comparisons
+    // against slug-derived hrefs like "/Chapter_2" keep matching.
+    select: (s) => s.location.pathname.replace(/\/+$/, "") || "/",
   });
 
   return (
@@ -49,6 +53,25 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      {glossary && (
+        <SidebarFooter className="border-t border-sidebar-border">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                size="sm"
+                isActive={pathname === "/glossary"}
+                className="text-sidebar-foreground/70 data-[active=true]:text-sidebar-foreground"
+              >
+                <Link to="/glossary">
+                  <BookMarked className="h-3.5 w-3.5" />
+                  <span>{glossary.frontmatter.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }

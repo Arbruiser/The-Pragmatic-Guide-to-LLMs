@@ -133,7 +133,7 @@ export function CodeBlock({
             <span className="nano-btn" aria-hidden>
               ▢
             </span>
-            <span className="nano-btn nano-btn-close" aria-hidden>
+            <span className="nano-btn" aria-hidden>
               ×
             </span>
           </div>
@@ -175,7 +175,7 @@ export function CodeBlock({
             <span className="terminal-btn" aria-hidden>
               ▢
             </span>
-            <span className="terminal-btn terminal-btn-close" aria-hidden>
+            <span className="terminal-btn" aria-hidden>
               ×
             </span>
           </div>
