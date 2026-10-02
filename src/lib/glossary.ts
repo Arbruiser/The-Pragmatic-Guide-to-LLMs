@@ -1,4 +1,4 @@
-import { findPage } from "./content";
+import { findPage, pages } from "./content";
 
 export interface GlossaryEntry {
   /** Canonical term as written in the glossary table. */
@@ -18,13 +18,13 @@ function stripInlineMarkdown(value: string): string {
     .trim();
 }
 
-/** Split a markdown table row into trimmed cell values. */
+/** Split a markdown table row into trimmed cell values. `\|` is a literal pipe. */
 function parseRow(line: string): string[] | null {
   const trimmed = line.trim();
   if (!trimmed.startsWith("|")) return null;
   // Drop the leading/trailing pipe, then split on unescaped pipes.
-  const inner = trimmed.replace(/^\|/, "").replace(/\|\s*$/, "");
-  return inner.split("|").map((c) => c.trim());
+  const inner = trimmed.replace(/^\|/, "").replace(/(?<!\\)\|\s*$/, "");
+  return inner.split(/(?<!\\)\|/).map((c) => c.replace(/\\\|/g, "|").trim());
 }
 
 /** A separator row looks like | :--- | :--- |. */
@@ -75,7 +75,13 @@ export function getGlossary(): Map<string, GlossaryEntry> {
     const definition = stripInlineMarkdown(cells[1]);
     if (!term || !definition) continue;
 
-    map.set(term.toLowerCase(), { term, definition });
+    const key = term.toLowerCase();
+    if (map.has(key)) {
+      console.warn(
+        `[glossary] ${page.path}: "${term}" is defined more than once, so only its last row is used. Remove or merge the duplicate rows.`,
+      );
+    }
+    map.set(key, { term, definition });
   }
 
   cache = map;
@@ -102,21 +108,46 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Regular English plurals of a lowercase term: -s, -es, and consonant + y to -ies. */
+function pluralForms(term: string): string[] {
+  const forms = [`${term}s`, `${term}es`];
+  if (/[^aeiou]y$/.test(term)) forms.push(`${term.slice(0, -1)}ies`);
+  return forms;
+}
+
+let formsCache: Map<string, GlossaryEntry> | null = null;
+
+/**
+ * Every recognised form (lowercase) of every term, mapped to its entry.
+ * A real glossary term always wins over a plural form of another term.
+ */
+function getForms(glossary: Map<string, GlossaryEntry>): Map<string, GlossaryEntry> {
+  if (formsCache) return formsCache;
+  const forms = new Map(glossary);
+  for (const [key, entry] of glossary) {
+    for (const form of pluralForms(key)) {
+      if (!forms.has(form)) forms.set(form, entry);
+    }
+  }
+  formsCache = forms;
+  return forms;
+}
+
 let patternCache: RegExp | null = null;
 
 /**
- * One regex that matches any glossary term (longest first so multi-word terms
- * win), captured in group 1, with an optional trailing percent marker in
- * group 2. Word boundaries keep "Markdown" from matching inside "Markdownish".
+ * One regex that matches any form of any glossary term (longest first so
+ * multi-word terms and plurals win), captured in group 1, with an optional
+ * trailing percent marker in group 2. Word boundaries keep "Markdown" from
+ * matching inside "Markdownish".
  */
 function buildPattern(glossary: Map<string, GlossaryEntry>): RegExp {
   if (patternCache) return patternCache;
-  const terms = [...glossary.values()]
-    .map((e) => e.term)
+  const terms = [...getForms(glossary).keys()]
     .sort((a, b) => b.length - a.length)
     .map(escapeRegExp);
   patternCache = new RegExp(
-    `(?<![\\p{L}\\p{N}])((?:${terms.join("|")})s?)(?![\\p{L}\\p{N}])(%?)`,
+    `(?<![\\p{L}\\p{N}])(${terms.join("|")})(?![\\p{L}\\p{N}])(%?)`,
     "giu",
   );
   return patternCache;
@@ -139,38 +170,22 @@ function processSegment(
     // Only an explicit `%` marker creates a link — no automatic matching, so
     // there are never false positives on ordinary prose.
     if (pct !== "%") return full;
-    const key = termText.replace(/\s+/g, " ").trim().toLowerCase();
-
-    let entry = glossary.get(key);
-    let canonicalKey = key;
-
-    // Fallback: If not found and ends with 's', try the singular form
-    if (!entry && key.endsWith("s")) {
-      canonicalKey = key.slice(0, -1);
-      entry = glossary.get(canonicalKey);
-    }
-
+    const entry = resolveEntry(termText, glossary, linked);
     if (!entry) return full;
-    linked.add(canonicalKey);
     return spanFor(entry, termText);
   });
 }
 
-/** Resolve a term key (with singular fallback) and record it as linked. */
+/** Resolve a term or one of its plurals and record it as linked. */
 function resolveEntry(
   rawTerm: string,
   glossary: Map<string, GlossaryEntry>,
   linked: Set<string>,
 ): GlossaryEntry | undefined {
   const key = rawTerm.replace(/\s+/g, " ").trim().toLowerCase();
-  let entry = glossary.get(key);
-  let canonicalKey = key;
-  if (!entry && key.endsWith("s")) {
-    canonicalKey = key.slice(0, -1);
-    entry = glossary.get(canonicalKey);
-  }
+  const entry = getForms(glossary).get(key);
   if (!entry) return undefined;
-  linked.add(canonicalKey);
+  linked.add(entry.term.toLowerCase());
   return entry;
 }
 
@@ -209,6 +224,7 @@ function processCodeSpan(
   if (trailing === "%") {
     const entry = resolveEntry(inner.trim(), glossary, linked);
     if (entry) return spanFor(entry, `${delim}${inner}${delim}`);
+    onUnknownMarker?.(`${delim}${inner}${delim}`);
     return `${delim}${inner}${delim}${trailing}`;
   }
   return `${delim}${inner}${delim}`;
@@ -254,55 +270,106 @@ export function splitCodeGlossaryMarkers(text: string): CodeGlossarySegment[] {
 const SHIELD = String.fromCharCode(0xe000);
 const SHIELDED_CODE_SPAN = new RegExp(`${SHIELD}(\\d+)${SHIELD}`, "g");
 
+function processText(
+  text: string,
+  glossary: Map<string, GlossaryEntry>,
+  pattern: RegExp,
+  linked: Set<string>,
+): string {
+  // 1) Inline code spans. Handle their markers now and shield their
+  //    contents behind placeholders so the passes below never touch them.
+  const codeSpans: string[] = [];
+  text = text.replace(CODE_SPAN, (_full, delim: string, inner: string, trailing: string) => {
+    codeSpans.push(processCodeSpan(delim, inner, trailing, glossary, linked));
+    return `${SHIELD}${codeSpans.length - 1}${SHIELD}`;
+  });
+
+  // 2) Bold/italic terms with the `%` marker inside or outside the delimiters.
+  text = text.replace(FORMATTED_MARKER, (full, delim: string, inner: string, trailing: string) => {
+    let term: string;
+    if (inner.endsWith("%")) {
+      term = inner.slice(0, -1);
+    } else if (trailing === "%") {
+      term = inner;
+    } else {
+      return full; // no marker — leave the formatting for markdown to render
+    }
+    const entry = resolveEntry(term.trim(), glossary, linked);
+    if (!entry) return full;
+    return spanFor(entry, `${delim}${term}${delim}`);
+  });
+
+  // 3) Plain-text terms with a trailing `%`.
+  text = processSegment(text, glossary, pattern, linked);
+  if (onUnknownMarker) {
+    for (const m of text.matchAll(UNKNOWN_MARKER)) onUnknownMarker(m[1]);
+  }
+  // Unescape \% to %
+  text = text.replace(/\\%/g, "%");
+
+  // 4) Restore the shielded code spans.
+  return text.replace(SHIELDED_CODE_SPAN, (_m, n: string) => codeSpans[Number(n)]);
+}
+
 function processLine(
   line: string,
   glossary: Map<string, GlossaryEntry>,
   pattern: RegExp,
   linked: Set<string>,
 ): string {
-  // Leave markdown links untouched; everything else is processed.
+  // Markdown links: only the link text is processed, never the URL.
   const parts = line.split(/(\[[^\]]*\]\([^)]*\))/g);
   for (let i = 0; i < parts.length; i++) {
-    if (i % 2 === 1) continue; // odd parts are links
-
-    // 1) Inline code spans. Handle their markers now and shield their
-    //    contents behind placeholders so the passes below never touch them.
-    const codeSpans: string[] = [];
-    parts[i] = parts[i].replace(
-      CODE_SPAN,
-      (_full, delim: string, inner: string, trailing: string) => {
-        codeSpans.push(processCodeSpan(delim, inner, trailing, glossary, linked));
-        return `${SHIELD}${codeSpans.length - 1}${SHIELD}`;
-      },
-    );
-
-    // 2) Bold/italic terms with the `%` marker inside or outside the delimiters.
-    parts[i] = parts[i].replace(
-      FORMATTED_MARKER,
-      (full, delim: string, inner: string, trailing: string) => {
-        let term: string;
-        if (inner.endsWith("%")) {
-          term = inner.slice(0, -1);
-        } else if (trailing === "%") {
-          term = inner;
-        } else {
-          return full; // no marker — leave the formatting for markdown to render
-        }
-        const entry = resolveEntry(term.trim(), glossary, linked);
-        if (!entry) return full;
-        return spanFor(entry, `${delim}${term}${delim}`);
-      },
-    );
-
-    // 3) Plain-text terms with a trailing `%`.
-    parts[i] = processSegment(parts[i], glossary, pattern, linked);
-    // Unescape \% to %
-    parts[i] = parts[i].replace(/\\%/g, "%");
-
-    // 4) Restore the shielded code spans.
-    parts[i] = parts[i].replace(SHIELDED_CODE_SPAN, (_m, n: string) => codeSpans[Number(n)]);
+    if (i % 2 === 0) {
+      parts[i] = processText(parts[i], glossary, pattern, linked);
+      continue;
+    }
+    // An image's alt text cannot hold markup, so images stay untouched.
+    if (parts[i - 1].endsWith("!")) continue;
+    const close = parts[i].indexOf("](");
+    const text = parts[i].slice(1, close);
+    // `[Term](url)%`: the whole link text is the term.
+    if (parts[i + 1].startsWith("%")) {
+      const entry = resolveEntry(text, glossary, linked);
+      if (entry) {
+        parts[i] = `[${spanFor(entry, text)}${parts[i].slice(close)}`;
+        parts[i + 1] = parts[i + 1].slice(1);
+        continue;
+      }
+      onUnknownMarker?.(text);
+    }
+    parts[i] = `[${processText(text, glossary, pattern, linked)}${parts[i].slice(close)}`;
   }
   return parts.join("");
+}
+
+/** A `%` straight after a word (or a closing `*`/`_`) that no term claimed. A
+ *  letter or digit after it means a URL escape such as `%20`, not a marker. */
+const UNKNOWN_MARKER = /([^\s%]*[\p{L}*_])%(?![\p{L}\p{N}])/gu;
+
+/** Receives each unresolved marker while the load-time check below runs. */
+let onUnknownMarker: ((marker: string) => void) | null = null;
+
+/**
+ * Warn about every `%` marker that matches no glossary term, usually a typo,
+ * which would otherwise just show its `%` with no error. Runs once on load,
+ * like the checks in content.ts, so it appears in the dev console and the CI
+ * build log.
+ */
+function warnAboutUnknownMarkers() {
+  if (getGlossary().size === 0) return;
+  for (const page of pages) {
+    if (page.slug === "glossary") continue;
+    const unknown = new Set<string>();
+    onUnknownMarker = (marker) => unknown.add(marker);
+    applyGlossaryMarkers(page.body);
+    onUnknownMarker = null;
+    for (const marker of unknown) {
+      console.warn(
+        `[glossary] ${page.path}: "${marker}%" matches no term in content/glossary.md, so the percent sign shows as typed. Check the spelling against the glossary table.`,
+      );
+    }
+  }
 }
 
 /**
@@ -316,7 +383,8 @@ function processLine(
  *   A marker outside inline code (`` `pip`% ``) makes the whole chip the
  *   trigger; markers inside code content (`` `pip%` ``, `` `pip% install` ``)
  *   pass through untouched and are resolved at render time (see
- *   splitCodeGlossaryMarkers). Fenced code blocks and links are skipped.
+ *   splitCodeGlossaryMarkers). Fenced code blocks, link URLs, and image alt
+ *   text are skipped; link text is processed.
  */
 export function applyGlossaryMarkers(source: string): string {
   const glossary = getGlossary();
@@ -338,3 +406,6 @@ export function applyGlossaryMarkers(source: string): string {
   }
   return lines.join("\n");
 }
+
+// Last, so every constant the check uses is already initialised.
+warnAboutUnknownMarkers();

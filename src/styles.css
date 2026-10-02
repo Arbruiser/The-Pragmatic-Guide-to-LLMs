@@ -69,6 +69,7 @@
   --color-lumi-purple: var(--lumi-purple);
   --color-lumi-blue: var(--lumi-blue);
   --color-lumi-magenta: var(--lumi-magenta);
+  --color-lumi-black: var(--lumi-black);
   --color-link: var(--link);
 
   /* Code blocks */
@@ -81,6 +82,7 @@
   --color-terminal-border: var(--terminal-border);
   --color-terminal-fg: var(--terminal-fg);
   --color-terminal-prompt: var(--terminal-prompt);
+  --color-terminal-prompt-local: var(--terminal-prompt-local);
   --color-terminal-chrome-fg: var(--terminal-chrome-fg);
 
   /* Callouts */
@@ -126,155 +128,147 @@ html {
   --lumi-magenta: oklch(0.616 0.253 355.14);  /* #ec008c */
   --lumi-black: oklch(0.244 0.006 0.59);      /* #231f20 */
 
-  /* Light theme — brand mixed with white */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.225 0.004 17);
-  --card: oklch(1 0 0);
+  /*
+   * The scale. Every token further down points at one of these, and the dark
+   * theme only redefines this block. Light theme: brand mixed with white.
+   * Text colours (--*-text, --n-muted) reach 4.5:1 on every surface they sit
+   * on, also under simulated protanopia, deuteranopia and tritanopia; purple
+   * and magenta are darkened with brand black to get there.
+   */
+  --page-bg: white;
+  --page-fg: var(--lumi-black);
+  --n-surface: color-mix(in oklab, var(--lumi-black) 4%, white);
+  --n-subtle: color-mix(in oklab, var(--lumi-black) 8%, white);
+  --n-border: color-mix(in oklab, var(--lumi-black) 12%, white);
+  --n-muted: color-mix(in oklab, var(--lumi-black) 72%, white);
+  --blue-surface: color-mix(in oklab, var(--lumi-blue) 6%, white);
+  --blue-subtle: color-mix(in oklab, var(--lumi-blue) 15%, white);
+  --blue-border: color-mix(in oklab, var(--lumi-blue) 30%, white);
+  --blue-text: var(--lumi-blue);
+  --purple-surface: color-mix(in oklab, var(--lumi-purple) 6%, white);
+  --purple-subtle: color-mix(in oklab, var(--lumi-purple) 15%, white);
+  --purple-border: color-mix(in oklab, var(--lumi-purple) 30%, white);
+  --purple-text: color-mix(in oklab, var(--lumi-purple) 75%, var(--lumi-black));
+  --magenta-surface: color-mix(in oklab, var(--lumi-magenta) 6%, white);
+  --magenta-subtle: color-mix(in oklab, var(--lumi-magenta) 15%, white);
+  --magenta-border: color-mix(in oklab, var(--lumi-magenta) 30%, white);
+  --magenta-text: color-mix(in oklab, var(--lumi-magenta) 70%, var(--lumi-black));
+
+  --background: var(--page-bg);
+  --foreground: var(--page-fg);
+  --card: var(--page-bg);
   --card-foreground: var(--foreground);
-  --popover: oklch(1 0 0);
+  --popover: var(--page-bg);
   --popover-foreground: var(--foreground);
-  --primary: var(--lumi-blue);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0.012 240);
-  --secondary-foreground: var(--lumi-blue);
-  --muted: oklch(0.965 0.005 240);
-  --muted-foreground: oklch(0.45 0.02 250);
-  --accent: oklch(0.95 0.04 290);
-  --accent-foreground: var(--lumi-purple);
+  --primary: var(--blue-text);
+  --primary-foreground: var(--page-bg);
+  --secondary: var(--blue-surface);
+  --secondary-foreground: var(--blue-text);
+  --muted: var(--n-surface);
+  --muted-foreground: var(--n-muted);
+  --accent: var(--purple-subtle);
+  --accent-foreground: var(--purple-text);
   --destructive: var(--lumi-magenta);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.91 0.01 240);
-  --input: oklch(0.91 0.01 240);
-  --ring: var(--lumi-blue);
-  --link: var(--lumi-blue);
+  --destructive-foreground: white;
+  --border: var(--n-border);
+  --input: var(--n-border);
+  --ring: var(--blue-text);
+  --link: var(--blue-text);
 
-  --sidebar: oklch(0.985 0.008 290);                       /* very-light-purple */
+  --sidebar: var(--purple-surface);
   --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--lumi-blue);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.93 0.03 290);
-  --sidebar-accent-foreground: var(--lumi-blue);
-  --sidebar-border: oklch(0.9 0.02 290);
-  --sidebar-ring: var(--lumi-blue);
+  --sidebar-primary: var(--blue-text);
+  --sidebar-primary-foreground: var(--page-bg);
+  --sidebar-accent: var(--purple-subtle);
+  --sidebar-accent-foreground: var(--blue-text);
+  --sidebar-border: var(--purple-border);
+  --sidebar-ring: var(--blue-text);
 
-  --code-bg: oklch(0.978 0.008 240);
-  --code-border: oklch(0.9 0.02 240);
-  --inline-code-bg: oklch(0.945 0.008 240);
-  --inline-code-fg: var(--lumi-blue);
+  --code-bg: var(--blue-surface);
+  --code-border: var(--blue-border);
+  --inline-code-bg: var(--n-subtle);
+  --inline-code-fg: var(--blue-text);
 
   --terminal-bg: #3d0a2c;                       /* classic Ubuntu aubergine */
   --terminal-chrome: oklch(0.32 0.012 280);     /* Ubuntu titlebar */
   --terminal-chrome-fg: oklch(0.96 0.005 280);
   --terminal-border: oklch(0.18 0.04 350);
   --terminal-fg: #ffffff;
-  --terminal-prompt: oklch(0.78 0.18 142);      /* Ubuntu green prompt */
+  /* Lightened so both prompts reach about 7:1 on the aubergine, also under
+     simulated colour blindness. Pure magenta and purple fall below 4.5:1. */
+  --terminal-prompt: color-mix(in oklab, var(--lumi-magenta) 60%, white);      /* user@LUMI */
+  --terminal-prompt-local: color-mix(in oklab, var(--lumi-purple) 60%, white); /* user@laptop */
 
-  --callout-note-bg: oklch(0.97 0.018 290);
-  --callout-note-border: oklch(0.85 0.04 290);
-  --callout-warning-bg: color-mix(in oklab, var(--lumi-magenta) 8%, white);
-  --callout-warning-border: color-mix(in oklab, var(--lumi-magenta) 28%, white);
+  --callout-note-bg: var(--purple-surface);
+  --callout-note-border: var(--purple-border);
+  --callout-warning-bg: var(--magenta-surface);
+  --callout-warning-border: var(--magenta-border);
   /* Info = lighter blue, Tip = deeper blue (same hue, different intensity) */
-  --callout-info-bg: color-mix(in oklab, var(--lumi-blue) 6%, white);
-  --callout-info-border: color-mix(in oklab, var(--lumi-blue) 24%, white);
-  --callout-tip-bg: color-mix(in oklab, var(--lumi-blue) 18%, white);
-  --callout-tip-border: color-mix(in oklab, var(--lumi-blue) 52%, white);
-  --callout-command-bg: oklch(0.96 0.012 240);
-  --callout-command-border: oklch(0.83 0.04 240);
+  --callout-info-bg: var(--blue-surface);
+  --callout-info-border: var(--blue-border);
+  --callout-tip-bg: var(--blue-subtle);
+  --callout-tip-border: var(--blue-text);
+  --callout-command-bg: var(--n-surface);
+  --callout-command-border: var(--n-border);
 
-  /* Collapsible <details> blocks — purple family, magenta affordance */
-  --details-bg: color-mix(in oklab, var(--lumi-purple) 4%, white);
-  --details-summary-bg: color-mix(in oklab, var(--lumi-purple) 13%, white);
-  --details-summary-bg-hover: color-mix(in oklab, var(--lumi-purple) 22%, white);
-  --details-border: color-mix(in oklab, var(--lumi-purple) 40%, white);
-  --details-accent: var(--lumi-magenta);
+  /* Collapsible <details> blocks: purple family, magenta affordance */
+  --details-bg: var(--purple-surface);
+  --details-summary-bg: var(--purple-subtle);
+  --details-summary-bg-hover: color-mix(in oklab, var(--purple-subtle), var(--purple-border));
+  --details-border: var(--purple-border);
+  --details-accent: var(--magenta-text);
 
-  --quiz-card-bg: oklch(0.985 0.012 290);
-  --quiz-card-border: oklch(0.86 0.04 290);
-  --quiz-header-bg: color-mix(in oklab, var(--lumi-purple) 8%, white);
-  --quiz-accent: var(--lumi-blue);
+  --quiz-card-bg: var(--purple-surface);
+  --quiz-card-border: var(--purple-border);
+  --quiz-header-bg: var(--purple-subtle);
+  --quiz-accent: var(--blue-text);
   --quiz-correct: oklch(0.52 0.13 165);  /* green */
   --quiz-wrong: oklch(0.55 0.21 27);     /* red */
   --quiz-correct-bg: color-mix(in oklab, var(--quiz-correct) 12%, white);
   --quiz-correct-border: color-mix(in oklab, var(--quiz-correct) 45%, white);
   --quiz-wrong-bg: color-mix(in oklab, var(--quiz-wrong) 10%, white);
   --quiz-wrong-border: color-mix(in oklab, var(--quiz-wrong) 42%, white);
-  --quiz-selected-border: var(--lumi-purple);
+  --quiz-selected-border: var(--purple-text);
 }
 
 
 .dark {
-  /* Dark theme — brand mixed with LUMI black */
-  --background: oklch(0.18 0.01 250);
-  --foreground: oklch(0.97 0.005 240);
-  --card: oklch(0.22 0.012 250);
-  --card-foreground: var(--foreground);
-  --popover: oklch(0.22 0.012 250);
-  --popover-foreground: var(--foreground);
-  --primary: oklch(0.72 0.092 237);          /* lighter LUMI blue for dark bg */
-  --primary-foreground: oklch(0.18 0.01 250);
-  --secondary: oklch(0.27 0.02 250);
-  --secondary-foreground: var(--foreground);
-  --muted: oklch(0.26 0.015 250);
-  --muted-foreground: oklch(0.72 0.015 240);
-  --accent: oklch(0.32 0.05 290);
-  --accent-foreground: oklch(0.95 0.02 290);
-  --destructive: var(--lumi-magenta);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.7 0.092 237);
-  --link: oklch(0.74 0.092 237);
+  /* Dark theme: brand mixed with LUMI black, text colours lifted with white.
+     The base is LUMI black deepened with pure black, so the page is darker
+     than #231f20 but keeps its warm grey tone. */
+  --dark-base: color-mix(in oklab, var(--lumi-black) 75%, black);
+  --page-bg: var(--dark-base);
+  --page-fg: color-mix(in oklab, white 94%, var(--dark-base));
+  --n-surface: color-mix(in oklab, white 5%, var(--dark-base));
+  --n-subtle: color-mix(in oklab, white 10%, var(--dark-base));
+  --n-border: color-mix(in oklab, white 18%, var(--dark-base));
+  --n-muted: color-mix(in oklab, white 68%, var(--dark-base));
+  --blue-surface: color-mix(in oklab, var(--lumi-blue) 14%, var(--dark-base));
+  --blue-subtle: color-mix(in oklab, var(--lumi-blue) 26%, var(--dark-base));
+  --blue-border: color-mix(in oklab, var(--lumi-blue) 50%, var(--dark-base));
+  --blue-text: color-mix(in oklab, var(--lumi-blue) 55%, white);
+  --purple-surface: color-mix(in oklab, var(--lumi-purple) 14%, var(--dark-base));
+  --purple-subtle: color-mix(in oklab, var(--lumi-purple) 26%, var(--dark-base));
+  --purple-border: color-mix(in oklab, var(--lumi-purple) 50%, var(--dark-base));
+  --purple-text: color-mix(in oklab, var(--lumi-purple) 55%, white);
+  --magenta-surface: color-mix(in oklab, var(--lumi-magenta) 14%, var(--dark-base));
+  --magenta-subtle: color-mix(in oklab, var(--lumi-magenta) 26%, var(--dark-base));
+  --magenta-border: color-mix(in oklab, var(--lumi-magenta) 50%, var(--dark-base));
+  --magenta-text: color-mix(in oklab, var(--lumi-magenta) 55%, white);
 
-  --sidebar: oklch(0.22 0.014 252);
-  --sidebar-foreground: oklch(0.95 0.005 240);
-  --sidebar-primary: oklch(0.72 0.092 237);
-  --sidebar-primary-foreground: oklch(0.18 0.01 250);
-  --sidebar-accent: oklch(0.3 0.04 290);
-  --sidebar-accent-foreground: oklch(0.95 0.02 290);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.092 237);
+  /* Raised surfaces are lighter than the page in the dark theme. */
+  --card: var(--n-surface);
+  --popover: var(--n-surface);
 
-  --code-bg: oklch(0.24 0.014 250);
-  --code-border: oklch(1 0 0 / 10%);
-  --inline-code-bg: oklch(0.28 0.018 250);
-  --inline-code-fg: oklch(0.8 0.08 237);
-
-  --terminal-bg: #3d0a2c;
   --terminal-chrome: oklch(0.28 0.012 280);
-  --terminal-chrome-fg: oklch(0.96 0.005 280);
   --terminal-border: oklch(0.16 0.04 350);
-  --terminal-fg: #ffffff;
-  --terminal-prompt: oklch(0.78 0.18 142);
 
-  --callout-note-bg: oklch(0.27 0.04 290);
-  --callout-note-border: oklch(0.4 0.08 290);
-  --callout-warning-bg: oklch(0.32 0.13 355.14);
-  --callout-warning-border: oklch(0.7 0.28 355.14);
-  /* Info = lighter blue, Tip = deeper blue — mirrors the light-theme split */
-  --callout-info-bg: oklch(0.28 0.045 237);
-  --callout-info-border: oklch(0.44 0.08 237);
-  --callout-tip-bg: oklch(0.36 0.075 237);
-  --callout-tip-border: oklch(0.56 0.11 237);
-  --callout-command-bg: oklch(0.23 0.012 250);
-  --callout-command-border: oklch(1 0 0 / 12%);
-
-  --details-bg: oklch(0.235 0.02 290);
-  --details-summary-bg: oklch(0.3 0.045 290);
-  --details-summary-bg-hover: oklch(0.35 0.06 290);
-  --details-border: oklch(0.45 0.07 290);
-  --details-accent: color-mix(in oklab, var(--lumi-magenta) 80%, white);
-
-  --quiz-card-bg: oklch(0.23 0.014 252);
-  --quiz-card-border: oklch(1 0 0 / 12%);
-  --quiz-header-bg: oklch(0.27 0.03 290);
-  --quiz-accent: oklch(0.72 0.092 237);
   --quiz-correct: oklch(0.74 0.14 165);  /* green */
   --quiz-wrong: oklch(0.7 0.2 27);       /* red */
   --quiz-correct-bg: color-mix(in oklab, var(--quiz-correct) 16%, transparent);
   --quiz-correct-border: color-mix(in oklab, var(--quiz-correct) 50%, transparent);
   --quiz-wrong-bg: color-mix(in oklab, var(--quiz-wrong) 16%, transparent);
   --quiz-wrong-border: color-mix(in oklab, var(--quiz-wrong) 50%, transparent);
-  --quiz-selected-border: oklch(0.72 0.09 290);
 }
 
 @layer base {
@@ -612,8 +606,7 @@ html {
 }
 
 /* ============= Syntax highlighting (LUMI palette only) =============
-   Hues used: 237 (blue), 281 (purple), 355 (magenta) — LUMI AIF only.
-   Lightness adjusted for sufficient contrast in light vs dark mode. */
+   The --*-text colours of the scale, so both themes keep 4.5:1. */
 .hljs {
   background: transparent !important;
   color: var(--color-foreground);
@@ -627,7 +620,7 @@ html {
 .hljs-tag,
 .hljs-title,
 .hljs-section {
-  color: var(--lumi-blue);
+  color: var(--blue-text);
   font-weight: 600;
 }
 
@@ -638,7 +631,7 @@ html {
 .hljs-symbol,
 .hljs-bullet,
 .hljs-regexp {
-  color: var(--lumi-magenta);
+  color: var(--magenta-text);
 }
 
 .hljs-type,
@@ -646,7 +639,7 @@ html {
 .hljs-variable,
 .hljs-template-variable,
 .hljs-params {
-  color: var(--lumi-purple);
+  color: var(--purple-text);
 }
 
 .hljs-comment,
@@ -655,34 +648,6 @@ html {
 .hljs-deletion {
   color: var(--color-muted-foreground);
   font-style: italic;
-}
-
-.dark .hljs-keyword,
-.dark .hljs-selector-tag,
-.dark .hljs-built_in,
-.dark .hljs-name,
-.dark .hljs-tag,
-.dark .hljs-title,
-.dark .hljs-section {
-  color: oklch(0.78 0.1 237); /* lighter LUMI blue — readable on dark bg */
-}
-
-.dark .hljs-string,
-.dark .hljs-attr,
-.dark .hljs-literal,
-.dark .hljs-number,
-.dark .hljs-symbol,
-.dark .hljs-bullet,
-.dark .hljs-regexp {
-  color: color-mix(in oklab, var(--lumi-magenta) 78%, white); /* brighter LUMI magenta */
-}
-
-.dark .hljs-type,
-.dark .hljs-class .hljs-title,
-.dark .hljs-variable,
-.dark .hljs-template-variable,
-.dark .hljs-params {
-  color: oklch(0.78 0.09 290);
 }
 
 /* ============= Per-line wrapping for code blocks ============= */
@@ -743,6 +708,10 @@ pre.with-line-numbers .code-line::before {
   user-select: none;
 }
 
+.terminal-block-local .terminal-prompt {
+  color: var(--color-terminal-prompt-local);
+}
+
 .terminal-command {
   min-width: 0;
 }
@@ -793,13 +762,13 @@ pre.with-line-numbers .code-line::before {
 
 .terminal-block .hljs-comment,
 .terminal-block .hljs-meta {
-  color: oklch(0.65 0.02 240) !important;
+  color: color-mix(in oklab, white 60%, var(--lumi-black)) !important;
   font-style: italic;
 }
 
 .terminal-block .hljs-variable,
 .terminal-block .hljs-params {
-  color: oklch(0.82 0.08 290) !important;
+  color: color-mix(in oklab, var(--lumi-purple) 60%, white) !important;
 }
 
 /* ============= nano editor styled .sh blocks ============= */
@@ -862,13 +831,13 @@ pre.with-line-numbers .code-line::before {
 
 .nano-block .hljs-comment,
 .nano-block .hljs-meta {
-  color: oklch(0.65 0.02 240) !important;
+  color: color-mix(in oklab, white 60%, var(--lumi-black)) !important;
   font-style: italic;
 }
 
 .nano-block .hljs-variable,
 .nano-block .hljs-params {
-  color: oklch(0.82 0.08 290) !important;
+  color: color-mix(in oklab, var(--lumi-purple) 60%, white) !important;
 }
 
 /* ============= Mermaid diagrams ============= */
@@ -1029,7 +998,7 @@ pre.with-line-numbers .code-line::before {
 
 .quiz-btn {
   background: var(--quiz-accent);
-  color: oklch(1 0 0);
+  color: var(--background);
   transition: opacity 0.15s ease;
 }
 

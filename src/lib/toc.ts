@@ -15,12 +15,36 @@ const ENTITIES: Record<string, string> = {
   "&nbsp;": " ",
 };
 
+/** Drop HTML tags and decode entities, leaving the text a browser would show. */
+function stripHtml(text: string): string {
+  return text
+    .replace(/<\/?[a-zA-Z][^>]*>/g, "")
+    .replace(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (m) => ENTITIES[m]);
+}
+
 /** Text content of a raw HTML heading, so its slug matches what rehype-slug
  *  computes from the rendered element. */
 function htmlHeadingText(inner: string): string {
+  return stripHtml(inner).trim();
+}
+
+/** Text content of a markdown heading, same purpose. Inline markdown is
+ *  unwrapped, and raw HTML in the heading is reduced to its text: a `<summary>`
+ *  title written with tags in it (`<summary>## Using <code>rclone</code></summary>`)
+ *  becomes an ordinary markdown heading before it gets here, and the browser
+ *  shows `Using rclone`. Inside a code span both are literal, so those are left
+ *  as written. */
+function markdownHeadingText(inner: string): string {
   return inner
-    .replace(/<[^>]*>/g, "")
-    .replace(/&(?:amp|lt|gt|quot|#39|nbsp);/g, (m) => ENTITIES[m])
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .split(/(`[^`]*`)/)
+    .map((part) => {
+      const isCode = part.length >= 2 && part.startsWith("`") && part.endsWith("`");
+      return isCode ? part.slice(1, -1) : stripHtml(part);
+    })
+    .join("")
     .trim();
 }
 
@@ -55,13 +79,7 @@ export function extractToc(body: string): TocItem[] {
     const depth = (m ? m[1].length : Number(html![1])) as 2 | 3;
     // Inline markdown is only parsed in a markdown heading; a raw HTML heading
     // renders its text as written, so only its tags need stripping.
-    const cleaned = m
-      ? m[2]
-          .replace(/`([^`]+)`/g, "$1")
-          .replace(/\*\*([^*]+)\*\*/g, "$1")
-          .replace(/\*([^*]+)\*/g, "$1")
-          .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-      : htmlHeadingText(html![2]);
+    const cleaned = m ? markdownHeadingText(m[2]) : htmlHeadingText(html![2]);
     // Glossary markers are preprocessed in both cases, so drop them either way.
     const text = cleaned
       .replace(/(?<![\s\d\\])%/g, "") // Remove glossary % markers

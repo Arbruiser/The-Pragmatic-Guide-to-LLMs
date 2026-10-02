@@ -9,6 +9,7 @@
 //   description content/index.md front-matter `description`, else its first paragraph
 //   siteUrl     VITE_SITE_URL, computed from GITHUB_REPOSITORY in the deploy workflow
 //   auxLinks    LUMI AIF constant
+//   copyright   LUMI AIF constant, year from the build date
 //   fundingNotice LUMI AIF constant
 
 import { findPage, firstHeading, getPageDescription } from "./content";
@@ -54,6 +55,12 @@ export const siteConfig = {
   siteUrl: import.meta.env.VITE_SITE_URL ?? "",
   /** External links shown on the right of the header. */
   auxLinks: [{ label: "LUMI AIF Website", href: "https://lumi-ai-factory.eu/" }],
+  /**
+   * Attribution shown in the footer, next to the licences. CC BY only works if
+   * a reuser knows who to credit. The year is the build year, so it never goes
+   * stale.
+   */
+  copyright: `© ${new Date().getFullYear()} LUMI AI Factory`,
   /** Funding acknowledgement shown at the end of every page. */
   fundingNotice:
     "The LUMI AI Factory Service Center is funded jointly by the EuroHPC Joint Undertaking and the Participating States FI, CZ, DK, EE, NO, PL.",

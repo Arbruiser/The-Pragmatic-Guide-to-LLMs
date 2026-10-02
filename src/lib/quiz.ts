@@ -17,7 +17,7 @@ export interface Quiz {
 }
 
 const OPTION_RE = /^[-*]\s*\[( |x|X)\]\s*(.*)$/;
-const QUESTION_RE = /^Q:\s*(.*)$/;
+const QUESTION_RE = /^Q:\s*(.*)$/i;
 const EXPLANATION_RE = /^>\s?(.*)$/;
 const TITLE_RE = /^title:\s*(.*)$/i;
 
@@ -71,7 +71,8 @@ export function parseQuiz(source: string): Quiz {
   let seenContent = false;
 
   for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
+    // Indentation carries no meaning, so indented options still count.
+    const line = rawLine.trim();
 
     // A `title:` directive is only honoured before any question content.
     if (!seenContent) {

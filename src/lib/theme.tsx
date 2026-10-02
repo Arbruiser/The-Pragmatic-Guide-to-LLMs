@@ -17,18 +17,30 @@ function getSystem(): Resolved {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+/** Storage can throw when site data is blocked; the theme then just follows the system. */
+function readSaved(): Theme {
+  try {
+    return (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
+  } catch {
+    return "system";
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<Theme>("system");
   const [resolved, setResolved] = React.useState<Resolved>("light");
+  const [loaded, setLoaded] = React.useState(false);
 
   // Load saved preference on mount.
   React.useEffect(() => {
-    const saved = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
-    setThemeState(saved);
+    setThemeState(readSaved());
+    setLoaded(true);
   }, []);
 
-  // Apply theme to <html> and react to system changes.
+  // Apply theme to <html> and react to system changes. Waits for the saved
+  // preference, so the class set before hydration is not briefly undone.
   React.useEffect(() => {
+    if (!loaded) return;
     const apply = () => {
       const next: Resolved = theme === "system" ? getSystem() : theme;
       setResolved(next);
@@ -41,10 +53,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       mq.addEventListener("change", apply);
       return () => mq.removeEventListener("change", apply);
     }
-  }, [theme]);
+  }, [theme, loaded]);
 
   const setTheme = React.useCallback((t: Theme) => {
-    localStorage.setItem(STORAGE_KEY, t);
+    try {
+      localStorage.setItem(STORAGE_KEY, t);
+    } catch {
+      // Not remembered, but still applied for this visit.
+    }
     setThemeState(t);
   }, []);
 

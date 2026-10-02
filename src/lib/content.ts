@@ -1,21 +1,5 @@
-import { load as parseYaml } from "js-yaml";
-
-/**
- * Split a markdown string into its YAML frontmatter and body.
- *
- * Replaces `gray-matter`, which pulled Node's `Buffer`/`fs` into the browser
- * bundle. Our content only uses a leading `---` fenced YAML block, so a small
- * pure-JS parser handles it without any Node polyfills.
- */
-function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
-  // Strip a leading BOM, then match an opening `---` fence at the very start.
-  const text = raw.replace(/^\uFEFF/, "");
-  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
-  if (!match) return { data: {}, content: text };
-  const parsed = parseYaml(match[1]);
-  const data = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
-  return { data, content: text.slice(match[0].length) };
-}
+import { blockSlug, splitPageBlocks } from "./page-blocks";
+import { isNotebookPath, notebookToMarkdown } from "./notebook";
 
 /**
  * Let authors size a collapsible title with normal markdown:
@@ -71,9 +55,15 @@ export interface Page {
   path: string;
   frontmatter: PageFrontmatter;
   body: string;
+  /**
+   * Set only on a page written inside another page's file: the slug of that
+   * file's own page. Such a page always nests under the page it was written
+   * in, so it needs no `parent` of its own.
+   */
+  parentSlug?: string;
 }
 
-const rawModules = import.meta.glob("/content/**/*.md", {
+const rawModules = import.meta.glob("/content/**/*.{md,ipynb}", {
   query: "?raw",
   import: "default",
   eager: true,
@@ -83,19 +73,38 @@ function fileToSlug(filePath: string): string {
   // "/content/index.md" -> ""
   // "/content/chapter1.md" -> "chapter1"
   // "/content/sub/page.md" -> "sub/page"
-  const rel = filePath.replace(/^\/content\//, "").replace(/\.md$/, "");
+  // "/content/01_intro.ipynb" -> "01_intro"
+  const rel = filePath.replace(/^\/content\//, "").replace(/\.(md|ipynb)$/, "");
   return rel === "index" ? "" : rel;
 }
 
+/**
+ * Every page of the site. Usually one per `.md` file, but a file that ends in
+ * further front-matter blocks contributes one page per block, so a chapter can
+ * keep its subchapters in the same file. Those extra pages are ordinary in
+ * every way: their own URL, sidebar entry, breadcrumbs and Previous/Next step.
+ *
+ * A `.ipynb` file is a page too: it is converted to markdown on the way in and
+ * is indistinguishable from a `.md` file from here on.
+ */
 export const pages: Page[] = Object.entries(rawModules)
-  .map(([filePath, raw]) => {
-    const parsed = parseFrontmatter(raw);
-    return {
-      slug: fileToSlug(filePath),
-      path: filePath.replace(/^\//, ""),
-      frontmatter: parsed.data as unknown as PageFrontmatter,
-      body: expandSummaryHeadings(parsed.content),
-    };
+  .flatMap(([filePath, raw]) => {
+    const path = filePath.replace(/^\//, "");
+    const fileSlug = fileToSlug(filePath);
+    const warn = (message: string) => console.warn(`[content] ${path}: ${message}`);
+    const text = isNotebookPath(filePath)
+      ? notebookToMarkdown(raw, filePath.replace(/^\/content\//, ""), warn)
+      : raw;
+    const blocks = splitPageBlocks(text, warn);
+    return blocks.map((block, i) => ({
+      slug: i === 0 ? fileSlug : blockSlug(block.data, fileSlug, i),
+      path,
+      frontmatter: block.data as unknown as PageFrontmatter,
+      body: expandSummaryHeadings(block.content),
+      // Written inside `fileSlug`'s file, so it hangs under that page. Sorting
+      // below is stable, which keeps blocks in the order they were written.
+      ...(i === 0 ? {} : { parentSlug: fileSlug }),
+    }));
   })
   .sort((a, b) => (a.frontmatter.nav_order ?? 999) - (b.frontmatter.nav_order ?? 999));
 
@@ -107,6 +116,11 @@ export const pages: Page[] = Object.entries(rawModules)
  * `bun run dev` and in the CI build log when the site is prerendered.
  */
 function warnAboutContentMistakes(all: Page[]) {
+  if (!all.some((page) => page.slug === "")) {
+    console.warn(
+      `[content] content/index.md is missing, so the site's home page shows "not found". The landing page must be a file named exactly index.md in content/.`,
+    );
+  }
   const byTitle = new Map<string, Page>();
   for (const page of all) {
     const title = page.frontmatter.title;
@@ -125,6 +139,14 @@ function warnAboutContentMistakes(all: Page[]) {
   }
   for (const page of all) {
     const parent = page.frontmatter.parent;
+    if (page.parentSlug !== undefined) {
+      if (parent) {
+        console.warn(
+          `[content] ${page.path}: "${page.frontmatter.title}" is written inside this file, so it always sits under the page the file belongs to. Its "parent" field is ignored.`,
+        );
+      }
+      continue;
+    }
     if (!parent) continue;
     if (parent === page.frontmatter.title) {
       console.warn(
@@ -133,6 +155,21 @@ function warnAboutContentMistakes(all: Page[]) {
     } else if (!byTitle.has(parent)) {
       console.warn(
         `[content] ${page.path}: parent "${parent}" does not match any page title, so the page shows at the top level of the sidebar. Check it against the target page's "title".`,
+      );
+    }
+  }
+
+  // A page written inside a file is named by its title, so two different titles
+  // can still land on the same URL. Only the first of them is reachable.
+  const bySlug = new Map<string, Page>();
+  for (const page of all) {
+    const other = bySlug.get(page.slug);
+    if (!other) {
+      bySlug.set(page.slug, page);
+    } else if (other.frontmatter.title !== page.frontmatter.title) {
+      // Identical titles are already reported above; don't say it twice.
+      console.warn(
+        `[content] "${page.frontmatter.title}" (${page.path}) and "${other.frontmatter.title}" (${other.path}) both resolve to the URL "/${page.slug}", so only the first is reachable. A page written inside a file takes its URL from its title: reword one of them.`,
       );
     }
   }
@@ -270,15 +307,34 @@ export function getPrevNext(slug: string): PrevNext {
   };
 }
 
+let titleIndex: Map<string, Page> | null = null;
+
+/**
+ * The page a page nests under, or undefined when it sits at the top level.
+ *
+ * There are two ways to be a subpage and this is the single place that knows
+ * both: a page written inside another page's file always belongs to that page,
+ * and any other page belongs to whichever page its `parent` title names. The
+ * sidebar and the breadcrumbs both go through here, so a page can never appear
+ * in one place under a parent it does not have in the other.
+ */
+export function getParentPage(page: Page): Page | undefined {
+  // Note the explicit undefined check: the home page's slug is "".
+  if (page.parentSlug !== undefined) return findPage(page.parentSlug);
+  const parentTitle = page.frontmatter.parent;
+  if (!parentTitle) return undefined;
+  if (!titleIndex) titleIndex = new Map(pages.map((p) => [p.frontmatter.title, p]));
+  return titleIndex.get(parentTitle);
+}
+
 /** Build "Home › Chapter › Page" trail from front-matter parent links. */
 export function getBreadcrumbs(slug: string): Page[] {
   const page = findPage(slug);
   if (!page) return [];
   const trail: Page[] = [page];
   let current = page;
-  const byTitle = new Map(pages.map((p) => [p.frontmatter.title, p]));
-  while (current.frontmatter.parent) {
-    const parent = byTitle.get(current.frontmatter.parent);
+  for (;;) {
+    const parent = getParentPage(current);
     if (!parent || trail.includes(parent)) break;
     trail.unshift(parent);
     current = parent;
@@ -295,39 +351,41 @@ export interface NavNode {
 }
 
 export function buildNavTree(): NavNode[] {
-  const byTitle = new Map<string, NavNode>();
+  const nodes = new Map<Page, NavNode>();
   const roots: NavNode[] = [];
 
   for (const page of pages) {
     // The glossary is a reference appendix, not part of the reading flow: it
     // gets a pinned link in the sidebar footer instead of a nav entry, and is
-    // skipped by prev/next navigation (which flattens this tree).
-    if (page.slug === "glossary") continue;
-    const node: NavNode = { page, children: [] };
-    byTitle.set(page.frontmatter.title, node);
+    // skipped by prev/next navigation (which flattens this tree). Pages written
+    // inside glossary.md are part of that appendix and stay out of the nav too.
+    if (page.slug === "glossary" || page.parentSlug === "glossary") continue;
+    nodes.set(page, { page, children: [] });
   }
 
-  // True when linking `node` under `parentTitle` would make the node its own
-  // ancestor (self-parent or a longer `parent` loop) — that node becomes a
-  // root instead, since a cycle would recurse forever when the tree is walked.
-  const wouldCycle = (node: NavNode, parentTitle: string): boolean => {
-    const seen = new Set<string>();
-    let title: string | undefined = parentTitle;
-    while (title !== undefined && !seen.has(title)) {
-      if (title === node.page.frontmatter.title) return true;
-      seen.add(title);
-      title = byTitle.get(title)?.page.frontmatter.parent;
+  const parentNode = (node: NavNode): NavNode | undefined => {
+    const parent = getParentPage(node.page);
+    return parent ? nodes.get(parent) : undefined;
+  };
+
+  // True when hanging `node` under `start` would make the node its own ancestor
+  // (a page whose `parent` names itself, or a longer loop) — that node becomes
+  // a root instead, since a cycle would recurse forever when the tree is walked.
+  const wouldCycle = (node: NavNode, start: NavNode): boolean => {
+    const seen = new Set<NavNode>();
+    let current: NavNode | undefined = start;
+    while (current && !seen.has(current)) {
+      if (current === node) return true;
+      seen.add(current);
+      current = parentNode(current);
     }
     return false;
   };
 
-  for (const node of byTitle.values()) {
-    const parentTitle = node.page.frontmatter.parent;
-    if (parentTitle && byTitle.has(parentTitle) && !wouldCycle(node, parentTitle)) {
-      byTitle.get(parentTitle)!.children.push(node);
-    } else {
-      roots.push(node);
-    }
+  for (const node of nodes.values()) {
+    const parent = parentNode(node);
+    if (parent && !wouldCycle(node, parent)) parent.children.push(node);
+    else roots.push(node);
   }
 
   const sortChildren = (nodes: NavNode[]) => {

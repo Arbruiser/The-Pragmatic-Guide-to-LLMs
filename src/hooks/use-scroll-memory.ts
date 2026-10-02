@@ -70,8 +70,9 @@ export function useScrollMemory(slug: string, containerRef: React.RefObject<HTML
     const container = containerRef.current;
     if (!container || typeof window === "undefined") return;
 
+    // A link to a `#section` decides the position itself.
     const saved = store.get(slug);
-    if (!saved) return;
+    if (!saved || window.location.hash) return;
 
     let cancelled = false;
     let userInteracted = false;

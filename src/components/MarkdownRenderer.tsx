@@ -117,9 +117,12 @@ interface MarkdownRendererProps {
 function resolveAssetUrl(src: string | undefined): string | undefined {
   if (!src) return src;
   if (/^[a-z]+:\/\//i.test(src) || src.startsWith("//")) return src;
-  if (src.startsWith("/")) return src;
+  // `/assets/x`, `public/assets/x` and `../public/assets/x` all mean the same
+  // file as `./assets/x`. A leading `/` would skip the Pages base path.
+  const asset = /^(?:\.\.\/|\.\/|\/)?(?:public\/)?assets\//.exec(src);
+  if (!asset && src.startsWith("/")) return src;
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-  const rel = src.replace(/^\.\//, "");
+  const rel = asset ? `assets/${src.slice(asset[0].length)}` : src.replace(/^\.\//, "");
   return `${base}/${rel}`;
 }
 
@@ -387,7 +390,7 @@ export function MarkdownRenderer({ source, enableGlossary = true }: MarkdownRend
           rehypeRaw,
           rehypeSlug,
           rehypeCopyHeadingButtons,
-          rehypeHighlight,
+          [rehypeHighlight, { aliases: { bash: ["shlocal"] } }],
           rehypeKatex,
         ]}
         components={{
@@ -446,12 +449,12 @@ export function MarkdownRenderer({ source, enableGlossary = true }: MarkdownRend
             }>;
 
             const childClassName = child.props.className ?? "";
-            if (/\blanguage-quiz\b/.test(childClassName)) {
+            if (/\blanguage-quiz\b/i.test(childClassName)) {
               const quiz = parseQuiz(nodeToText(child.props.children));
               return <Quiz title={quiz.title} questions={quiz.questions} />;
             }
 
-            if (/\blanguage-mermaid\b/.test(childClassName)) {
+            if (/\blanguage-mermaid\b/i.test(childClassName)) {
               return <MermaidDiagram source={nodeToText(child.props.children).trim()} />;
             }
 
@@ -525,7 +528,12 @@ export function MarkdownRenderer({ source, enableGlossary = true }: MarkdownRend
             }
             // Internal links go through the router so the GitHub Pages base
             // path (e.g. "/<repo>/") is applied automatically.
-            const [path, hash] = href.split("#");
+            // `chapter1.md` (what editor previews expect) means the page `/chapter1`.
+            // Only `index.md` itself is the home page; `sub/index` stays a page.
+            const [file, hash] = href.split("#");
+            const isMd = /\.md$/i.test(file);
+            let path = file.replace(/^\.\//, "").replace(/\.md$/i, "");
+            if (isMd && /^\/?index$/.test(path)) path = "/";
             const to = path.startsWith("/") ? path : `/${path}`;
             return (
               <Link to={to as string} hash={hash || undefined} className={className}>

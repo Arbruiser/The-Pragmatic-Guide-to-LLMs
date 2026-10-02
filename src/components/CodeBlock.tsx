@@ -10,7 +10,10 @@ interface CodeBlockProps {
   highlightLines?: Set<number>;
 }
 
-const TERMINAL_LANGS = new Set(["bash", "shell", "zsh", "console"]);
+const TERMINAL_LANGS = new Set(["bash", "shell", "zsh", "console", "shlocal"]);
+
+/** Terminal languages that show the student's own machine instead of LUMI. */
+const LOCAL_LANGS = new Set(["shlocal"]);
 
 /** `.sh` scripts are shown as a file being edited (nano), not a live shell,
  *  so they get an editor chrome with no `user@machine` prompt. */
@@ -62,13 +65,13 @@ function wrapLines(children: React.ReactNode, highlight?: Set<number>): React.Re
   ));
 }
 
-function wrapTerminalLines(children: React.ReactNode): React.ReactNode {
+function wrapTerminalLines(children: React.ReactNode, host: string): React.ReactNode {
   const lines = splitIntoLines(children);
   while (lines.length > 1 && lines[lines.length - 1].length === 0) lines.pop();
   return lines.map((parts, i) => (
     <span key={i} className="terminal-line code-line">
       <span className="terminal-prompt" aria-hidden="true">
-        user@lumi:~$&nbsp;
+        user@{host}:~$&nbsp;
       </span>
       <span className="terminal-command">{parts.length > 0 ? parts : "\u200B"}</span>
     </span>
@@ -88,6 +91,8 @@ export function CodeBlock({
   const lang = className?.match(/language-(\w+)/)?.[1];
   const isTerminal = lang ? TERMINAL_LANGS.has(lang.toLowerCase()) : false;
   const isNano = lang ? NANO_LANGS.has(lang.toLowerCase()) : false;
+  const isLocal = lang ? LOCAL_LANGS.has(lang.toLowerCase()) : false;
+  const host = isLocal ? "laptop" : "LUMI";
 
   const onCopy = async () => {
     let text = "";
@@ -108,7 +113,9 @@ export function CodeBlock({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const wrapped = isTerminal ? wrapTerminalLines(children) : wrapLines(children, highlightLines);
+  const wrapped = isTerminal
+    ? wrapTerminalLines(children, host)
+    : wrapLines(children, highlightLines);
 
   if (isNano) {
     return (
@@ -153,11 +160,16 @@ export function CodeBlock({
 
   if (isTerminal) {
     return (
-      <div className="terminal-block group relative my-5 overflow-hidden rounded-md border border-terminal-border shadow-md">
+      <div
+        className={cn(
+          "terminal-block group relative my-5 overflow-hidden rounded-md border border-terminal-border shadow-md",
+          isLocal && "terminal-block-local",
+        )}
+      >
         <div className="terminal-chrome flex items-center justify-between px-3 py-1.5">
           <div className="w-16" />
           <span className="font-sans text-xs text-terminal-chrome-fg truncate">
-            {title ?? "user@lumi: ~"}
+            {title ?? `user@${host}: ~`}
           </span>
           <div className="flex items-center gap-1.5">
             <button
